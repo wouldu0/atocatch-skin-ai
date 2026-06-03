@@ -1,0 +1,39 @@
+# 사용자 업로드 이미지 및 DB
+app/data/
+data/
+
+# 모델 가중치 파일 (용량 큼)
+*.pth
+*.pkl
+
+# Python 캐시
+__pycache__/
+*.pyc
+*.pyo
+
+# 환경 설정
+.env
+*.env
+
+# 가상환경
+venv/
+env/
+.conda/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# 학습 결과물 (로컬에서만 관리)
+*.png
+*.csv
+*.npz
+*.json
