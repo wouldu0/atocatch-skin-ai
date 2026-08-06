@@ -30,6 +30,17 @@ AtoCatch는 두 가지 AI 모델을 결합해 이 문제를 해결합니다.
 |----------|---------|--------|
 | Logistic Regression (class_weight=balanced) | 0.786 | 0.3275 |
 
+### 🧪 추가 실험: DermNet 아토피 클래스 정제 (v4, 미채택)
+
+DermNet "Atopic Dermatitis Photos" 폴더에 keratosis·ichthyosis 등 혼입 이미지가 섞여 있어, 파일명에 `atopic`이 포함된 이미지만 남기고 재학습을 시도했습니다 (`image_model/experiments/`).
+
+| 버전 | 실사 이미지 스팟체크 정확도 |
+|------|------------------------------|
+| v3 (현재 채택 모델) | **52.0%** |
+| v4 (아토피 클래스 정제) | **44.0%** |
+
+정제된 데이터로 학습했음에도 실제 사진 테스트에서 오히려 성능이 하락해 **미채택**했습니다. 코드와 결과는 재현·참고용으로 남겨둡니다.
+
 ---
 
 ## 레포지토리 구조
@@ -42,7 +53,13 @@ AtoCatch/
 │   ├── 02_image_model_compare.py    # 후보 모델 비교 (EfficientNetV2-S 외 4종, 10 epoch)
 │   ├── 03_image_tune_optuna.py      # Optuna 하이퍼파라미터 자동 탐색 (30 trial)
 │   ├── 04_image_train.py            # 최적 HP 적용 풀학습 (20 epoch, warmup + cosine)
-│   └── 05_image_evaluate.py         # 최종 테스트 평가 (AI Hub / DermNet / 전체)
+│   ├── 05_image_evaluate.py         # 최종 테스트 평가 (AI Hub / DermNet / 전체)
+│   └── experiments/                 # DermNet 아토피 정제 실험 (v4, 미채택)
+│       ├── preprocess_v2.py         # DermNet 아토피 클래스 정제 전처리
+│       ├── train_mixed_v4.py        # v4 재학습
+│       ├── evaluate_test_mixed_v4.py
+│       ├── test_real.py             # 실사 이미지 스팟체크 (v3 기준)
+│       └── test_real_v4.py          # 실사 이미지 스팟체크 (v4)
 │
 ├── survey_model/                    # 문진형 아토피 위험도 파이프라인
 │   ├── 01_survey_eda_modeling.py    # KNHANES EDA, 전처리, 로지스틱 회귀 분석
