@@ -6,6 +6,7 @@ from PIL import Image
 from utils.predict import predict, CLASS_NAMES
 from utils.db import save_record
 from utils.style import apply_global_style
+from config import UPLOAD_DIR
 import datetime
 
 st.set_page_config(page_title="피부 분석", page_icon="📷", layout="centered")
@@ -65,10 +66,9 @@ if uploaded:
     st.divider()
 
     # ── 이미지 저장 ──────────────────────────────────────────
-    img_dir = os.path.join(os.path.dirname(__file__), "../data/uploads")
-    os.makedirs(img_dir, exist_ok=True)
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
     img_filename = f"{user['id']}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
-    img_path = os.path.join(img_dir, img_filename)
+    img_path = os.path.join(UPLOAD_DIR, img_filename)
     image.save(img_path, "JPEG", quality=92)
 
     # ── DB 저장 ──────────────────────────────────────────────
@@ -91,7 +91,7 @@ if uploaded:
 
     # ── 아토피 분기 ──────────────────────────────────────────
     if top["label"] == "아토피":
-        st.success("아토피 가능성이 감지됐습니다. 생활습관 설문을 통해 위험 요인을 확인해보세요.")
+        st.success("아토피 가능성이 감지됐습니다. 생활습관 설문을 통해 예측에 영향을 준 특성을 확인해보세요.")
         st.page_link("pages/2_아토피_설문.py", label="📋 아토피 설문 바로가기",
                      width='stretch')
     else:

@@ -1,5 +1,5 @@
 """
-04_select_retrain_test.py (찐찐찐최종)
+04_survey_select_retrain.py
 
 목표:
   03의 CV 결과를 읽어 best 후보를 선정 → train+valid 전체로 재학습 →
@@ -20,7 +20,7 @@ Calibration:
   - test set은 이 단계 retrain/predict 직전까지 안 본다
   - 03이 저장한 test_split_indices.npz로 동일 split 재현
 
-산출물 (D:\\시각화세미2\\찐찐찐최종\\04_최종모델\\):
+산출물 (survey_model/outputs/final_model/):
   - selection_log.txt   : tie-break 단계별 로그
   - best_model.pkl      : (model, imputer, isotonic, config, feature_order)
   - best_config.json    : 최종 조건 + test metrics + 95% CI
@@ -54,11 +54,10 @@ import lightgbm as lgb
 warnings.filterwarnings('ignore')
 
 # ===== 경로 =====
-ROOT_OLD = Path(r"D:\시각화세미2\찐찐최종")
-ROOT_NEW = Path(r"D:\시각화세미2\찐찐찐최종")
-DATA_DIR = ROOT_OLD / "01_데이터"
-TUNE_DIR = ROOT_NEW / "03_튜닝CV"
-OUT_DIR = ROOT_NEW / "04_최종모델"
+SURVEY_DIR = Path(__file__).resolve().parent
+DATA_DIR = SURVEY_DIR / "data"                      # 02_prepare_features.py의 출력
+TUNE_DIR = SURVEY_DIR / "outputs" / "tuning_cv"      # 03_survey_tune_cv.py의 출력
+OUT_DIR = SURVEY_DIR / "outputs" / "final_model"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 TARGET = 'DL1_dg'

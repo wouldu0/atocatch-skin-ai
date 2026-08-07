@@ -3,6 +3,7 @@
 # EfficientNetV2-S | Optuna 튜닝 적용 버전
 # ============================================================
 import os
+from pathlib import Path
 import numpy as np
 import pandas as pd
 from PIL import Image
@@ -19,10 +20,11 @@ from tqdm import tqdm
 plt.rcParams['font.family'] = 'Malgun Gothic'
 plt.rcParams['axes.unicode_minus'] = False
 
-# ── 설정 ──────────────────────────────────────────────────
-CSV_PATH   = r"E:\skin\skin_disease_mixed.csv"
+# ── 설정 (본인 환경에 맞게 수정) ──────────────────────────────
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+CSV_PATH   = PROJECT_ROOT / "data" / "skin_disease_mixed.csv"
 IMAGE_COL  = "image_path_300"
-SAVE_DIR   = r"E:\skin\models\mixed_v3"
+SAVE_DIR   = PROJECT_ROOT / "models" / "mixed_v3"
 os.makedirs(SAVE_DIR, exist_ok=True)
 
 IMG_SIZE        = 300
@@ -43,7 +45,9 @@ SEED = 42
 torch.manual_seed(SEED)
 np.random.seed(SEED)
 torch.cuda.manual_seed_all(SEED)
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+DEVICE   = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+USE_AMP  = DEVICE.type == "cuda"
+AMP_TYPE = DEVICE.type
 print(f"Device: {DEVICE}")
 
 # ── Dataset ────────────────────────────────────────────────
@@ -120,7 +124,7 @@ def lr_lambda(epoch):
     return 0.5 * (1.0 + np.cos(np.pi * progress))
 
 scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_lambda)
-scaler    = torch.amp.GradScaler("cuda")
+scaler    = torch.amp.GradScaler(AMP_TYPE, enabled=USE_AMP)
 
 # ── 학습/검증 함수 ──────────────────────────────────────────
 def train_one_epoch(model, loader):
@@ -129,7 +133,7 @@ def train_one_epoch(model, loader):
     for images, labels in tqdm(loader, desc="Train", leave=False):
         images, labels = images.to(DEVICE), labels.to(DEVICE)
         optimizer.zero_grad()
-        with torch.amp.autocast("cuda"):
+        with torch.amp.autocast(AMP_TYPE, enabled=USE_AMP):
             out  = model(images)
             loss = criterion(out, labels)
         scaler.scale(loss).backward()
@@ -149,7 +153,7 @@ def validate(model, loader):
     with torch.no_grad():
         for images, labels in tqdm(loader, desc="Val", leave=False):
             images, labels = images.to(DEVICE), labels.to(DEVICE)
-            with torch.amp.autocast("cuda"):
+            with torch.amp.autocast(AMP_TYPE, enabled=USE_AMP):
                 out  = model(images)
                 loss = criterion(out, labels)
             total_loss += loss.item() * images.size(0)
@@ -157,44 +161,47 @@ def validate(model, loader):
             total      += labels.size(0)
             all_preds.extend(out.argmax(1).cpu().numpy())
             all_labels.extend(labels.cpu().numpy())
-    return total_loss / total, correct / total, all_preds, all_labels
+    va_f1 = f1_score(all_labels, all_preds, average="macro", zero_division=0)
+    return total_loss / total, correct / total, va_f1, all_preds, all_labels
 
-# ── 학습 루프 ───────────────────────────────────────────────
-SAVE_PATH    = os.path.join(SAVE_DIR, "efficientnetv2_s_tuned.pth")
-best_val_acc = 0.0
-history      = {"train_loss": [], "val_loss": [],
-                "train_acc":  [], "val_acc":  []}
+# ── 학습 루프 (체크포인트 선정 기준: Macro F1 — Optuna 튜닝과 동일 기준) ──
+SAVE_PATH   = os.path.join(SAVE_DIR, "efficientnetv2_s_tuned.pth")
+best_val_f1 = 0.0
+history     = {"train_loss": [], "val_loss": [],
+               "train_acc":  [], "val_acc":  [], "val_f1": []}
 
 print(f"\n학습 시작: {EPOCHS} epochs | Optuna 튜닝 파라미터 적용 | {DEVICE}")
 for epoch in range(1, EPOCHS + 1):
     lr = optimizer.param_groups[0]["lr"]
     print(f"===== Epoch {epoch:2d}/{EPOCHS}  |  LR: {lr:.2e} =====")
 
-    tr_loss, tr_acc       = train_one_epoch(model, train_loader)
-    va_loss, va_acc, _, _ = validate(model, val_loader)
+    tr_loss, tr_acc          = train_one_epoch(model, train_loader)
+    va_loss, va_acc, va_f1, _, _ = validate(model, val_loader)
     scheduler.step()
 
     history["train_loss"].append(tr_loss)
     history["val_loss"].append(va_loss)
     history["train_acc"].append(tr_acc)
     history["val_acc"].append(va_acc)
+    history["val_f1"].append(va_f1)
 
     print(f"  Train: loss {tr_loss:.4f} | acc {tr_acc:.4f}")
-    print(f"  Val:   loss {va_loss:.4f} | acc {va_acc:.4f}")
+    print(f"  Val:   loss {va_loss:.4f} | acc {va_acc:.4f} | macro_f1 {va_f1:.4f}")
 
-    if va_acc > best_val_acc:
-        best_val_acc = va_acc
+    if va_f1 > best_val_f1:
+        best_val_f1 = va_f1
         torch.save({
             "epoch":            epoch,
             "model_name":       "tf_efficientnetv2_s",
             "model_state_dict": model.state_dict(),
             "val_acc":          va_acc,
+            "val_f1":           va_f1,
             "class_names":      CLASS_NAMES,
             "img_size":         IMG_SIZE,
         }, SAVE_PATH)
-        print(f"  [Best 저장] val_acc: {va_acc:.4f}")
+        print(f"  [Best 저장] macro_f1: {va_f1:.4f} (acc {va_acc:.4f})")
 
-print(f"\n최종 Best Val Acc: {best_val_acc:.4f}")
+print(f"\n최종 Best Val Macro F1: {best_val_f1:.4f}")
 
 # ── 학습 곡선 ───────────────────────────────────────────────
 fig, axes = plt.subplots(1, 2, figsize=(12, 4))
@@ -209,7 +216,7 @@ axes[1].set_title("Accuracy 곡선"); axes[1].set_xlabel("Epoch"); axes[1].legen
 gap = [tr - va for tr, va in zip(history["train_acc"], history["val_acc"])]
 print(f"\n과적합 확인 | 최대 격차: {max(gap)*100:.2f}% | 최종 격차: {gap[-1]*100:.2f}%")
 
-plt.suptitle(f"EfficientNetV2-S Optuna 튜닝 | Best Val Acc: {best_val_acc:.4f}", fontsize=13)
+plt.suptitle(f"EfficientNetV2-S Optuna 튜닝 | Best Val Macro F1: {best_val_f1:.4f}", fontsize=13)
 plt.tight_layout()
 plt.savefig(os.path.join(SAVE_DIR, "training_curves_tuned.png"), dpi=150)
 plt.show()
@@ -218,7 +225,7 @@ plt.show()
 ckpt = torch.load(SAVE_PATH, map_location=DEVICE)
 model.load_state_dict(ckpt["model_state_dict"])
 
-_, val_acc, val_preds, val_labels = validate(model, val_loader)
+_, val_acc, _, val_preds, val_labels = validate(model, val_loader)
 print("\n=== Classification Report (Val) ===")
 print(classification_report(val_labels, val_preds, target_names=CLASS_NAMES, digits=4))
 print(f"Macro F1: {f1_score(val_labels, val_preds, average='macro'):.4f}")

@@ -18,6 +18,12 @@ from sklearn.metrics import (
     f1_score, roc_auc_score, confusion_matrix, classification_report
 )
 
+# --- [경로 설정] ---
+DATA_DIR = Path(__file__).resolve().parent / "data"
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+# hn222324_all.csv(KNHANES 2022~2024 병합본)를 DATA_DIR에 위치시키세요.
+# -----------------------
+
 np.set_printoptions(precision=4, suppress=True)
 
 pd.set_option('display.max_rows', None)
@@ -160,7 +166,7 @@ def fit_logit_with_fallback(X_tmp, y_tmp, alpha=0.1, maxiter=200):
 # =========================
 # 1. 데이터 불러오기
 # =========================
-file_path = r"C:\semi2\hn222324_all.csv"
+file_path = DATA_DIR / "hn222324_all.csv"
 df = pd.read_csv(file_path, low_memory=False)
 
 print("\n[원본 데이터 크기]")
@@ -384,7 +390,7 @@ print(data.shape)
 print("\n[제거 후 남은 컬럼]")
 print(data.columns.tolist())
 
-plot_dir = Path(r"C:\semi2\plots")
+plot_dir = DATA_DIR / "plots"
 plot_dir.mkdir(parents=True, exist_ok=True)
 #%%
 # ================================
@@ -913,8 +919,7 @@ print(null_after[null_after > 0].sort_values(ascending=False))
 # =========================
 # 8-1. TA 전달용 전처리 완료 파일 저장
 # =========================
-save_dir = Path(r"C:\semi2")
-save_dir.mkdir(parents=True, exist_ok=True)
+save_dir = DATA_DIR
 
 preprocessed_for_ta = data.copy()
 

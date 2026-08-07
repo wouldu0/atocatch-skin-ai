@@ -7,6 +7,7 @@
 #   SAVE_DIR → models/mixed_v4
 # ============================================================
 import os
+from pathlib import Path
 import numpy as np
 import pandas as pd
 from PIL import Image
@@ -23,10 +24,11 @@ from tqdm import tqdm
 plt.rcParams['font.family'] = 'Malgun Gothic'
 plt.rcParams['axes.unicode_minus'] = False
 
-# ── 설정 ──────────────────────────────────────────────────
-CSV_PATH   = r"E:\skin\skin_disease_mixed_v2.csv"
+# ── 설정 (본인 환경에 맞게 수정) ──────────────────────────────
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+CSV_PATH   = PROJECT_ROOT / "data" / "skin_disease_mixed_v2.csv"
 IMAGE_COL  = "image_path_300"
-SAVE_DIR   = r"E:\skin\models\mixed_v4"
+SAVE_DIR   = PROJECT_ROOT / "models" / "mixed_v4"
 os.makedirs(SAVE_DIR, exist_ok=True)
 
 IMG_SIZE        = 300
@@ -47,7 +49,9 @@ SEED = 42
 torch.manual_seed(SEED)
 np.random.seed(SEED)
 torch.cuda.manual_seed_all(SEED)
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+DEVICE   = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+USE_AMP  = DEVICE.type == "cuda"
+AMP_TYPE = DEVICE.type
 print(f"Device: {DEVICE}")
 
 # ── Dataset ────────────────────────────────────────────────
@@ -127,7 +131,7 @@ def lr_lambda(epoch):
     return 0.5 * (1.0 + np.cos(np.pi * progress))
 
 scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_lambda)
-scaler    = torch.amp.GradScaler("cuda")
+scaler    = torch.amp.GradScaler(AMP_TYPE, enabled=USE_AMP)
 
 # ── 학습/검증 함수 ──────────────────────────────────────────
 def train_one_epoch(model, loader):
@@ -136,7 +140,7 @@ def train_one_epoch(model, loader):
     for images, labels in tqdm(loader, desc="Train", leave=False):
         images, labels = images.to(DEVICE), labels.to(DEVICE)
         optimizer.zero_grad()
-        with torch.amp.autocast("cuda"):
+        with torch.amp.autocast(AMP_TYPE, enabled=USE_AMP):
             out  = model(images)
             loss = criterion(out, labels)
         scaler.scale(loss).backward()
@@ -156,7 +160,7 @@ def validate(model, loader):
     with torch.no_grad():
         for images, labels in tqdm(loader, desc="Val", leave=False):
             images, labels = images.to(DEVICE), labels.to(DEVICE)
-            with torch.amp.autocast("cuda"):
+            with torch.amp.autocast(AMP_TYPE, enabled=USE_AMP):
                 out  = model(images)
                 loss = criterion(out, labels)
             total_loss += loss.item() * images.size(0)

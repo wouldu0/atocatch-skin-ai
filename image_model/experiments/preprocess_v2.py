@@ -11,20 +11,24 @@
 # Step 3. AI Hub + DermNet 합산 → skin_disease_mixed_v2.csv
 # ============================================================
 import os
+from pathlib import Path
 import numpy as np
 import pandas as pd
 from PIL import Image
 from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-# ── 경로 설정 ─────────────────────────────────────────────────
-AIHUB_CSV    = r"E:\skin\skin_disease_6class_side_dataset_for_ta.csv"
-DERMNET_ROOT = r"C:\Users\asia\Downloads\archive (2)"
+# ── 경로 설정 (본인 환경에 맞게 수정) ────────────────────────────
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+DATA_DIR     = PROJECT_ROOT / "data"
 
-AIHUB_OUT_DIR   = r"E:\skin\images_side_300"
-DERMNET_OUT_DIR = r"E:\skin\dermnet_300_v2"
-AIHUB_OUT_CSV   = r"E:\skin\skin_disease_6class_side_300px.csv"
-MIXED_OUT_CSV   = r"E:\skin\skin_disease_mixed_v2.csv"
+AIHUB_CSV    = DATA_DIR / "skin_disease_6class_side_dataset_for_ta.csv"
+DERMNET_ROOT = DATA_DIR / "dermnet_raw"  # Kaggle DermNet 압축 해제 폴더
+
+AIHUB_OUT_DIR   = DATA_DIR / "images_side_300"
+DERMNET_OUT_DIR = DATA_DIR / "dermnet_300_v2"
+AIHUB_OUT_CSV   = DATA_DIR / "skin_disease_6class_side_300px.csv"
+MIXED_OUT_CSV   = DATA_DIR / "skin_disease_mixed_v2.csv"
 
 IMG_SIZE     = 300
 JPEG_QUALITY = 92

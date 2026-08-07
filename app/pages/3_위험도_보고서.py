@@ -74,7 +74,7 @@ st.subheader("2. 종합 소견")
 if top_label == "정상":
     st.success("현재 피부 상태가 정상으로 예측됩니다. 정기적인 피부 관리를 유지하세요.")
 elif top_label == "아토피":
-    st.warning("아토피 가능성이 있습니다. 아래 위험 요인을 확인하고 피부과 전문의 상담을 권장합니다.")
+    st.warning("아토피 가능성이 있습니다. 아래 예측에 영향을 준 특성을 확인하고 피부과 전문의 상담을 권장합니다.")
 elif top_label == "건선":
     st.warning("건선 가능성이 있습니다. 건선은 면역 질환으로, 피부과 전문의 진단이 필요합니다.")
 elif top_label == "여드름":
@@ -84,15 +84,16 @@ elif top_label == "주사":
 else:
     st.warning(f"**{top_label}** 가능성이 있습니다. 정확한 진단을 위해 피부과 방문을 권장합니다.")
 
-# ── 3. 아토피 위험 요인 분석 ─────────────────────────────────────
+# ── 3. 예측에 영향을 준 주요 특성 ─────────────────────────────────
 st.divider()
-st.subheader("3. 아토피 위험 요인 분석")
+st.subheader("3. 예측에 영향을 준 주요 특성")
+st.caption("모델이 인과관계를 판단한 것이 아니라, 입력값이 예측 점수에 기여한 정도를 보여줍니다.")
 survey_features = st.session_state.get("survey_features")
 if survey_features:
     factors = get_risk_factors(survey_features)
     st.markdown("")
     if factors:
-        st.markdown("**📌 아토피 위험을 높이는 주요 요인 및 권고사항**")
+        st.markdown("**📌 예측 점수에 영향을 준 주요 특성 및 참고 정보**")
         for i, f in enumerate(factors[:3], 1):
             st.markdown(
                 f"""
@@ -109,9 +110,9 @@ if survey_features:
                 unsafe_allow_html=True,
             )
     else:
-        st.caption("✅ 설문 응답에서 아토피 위험을 높이는 주요 요인이 발견되지 않았습니다.")
+        st.caption("✅ 설문 응답에서 예측 점수에 영향을 준 주요 특성이 발견되지 않았습니다.")
 else:
-    st.info("아토피 설문을 진행하지 않았습니다. 아토피가 1위로 예측된 경우 설문을 통해 위험 요인을 확인할 수 있습니다.")
+    st.info("아토피 설문을 진행하지 않았습니다. 아토피가 1위로 예측된 경우 설문을 통해 예측에 영향을 준 특성을 확인할 수 있습니다.")
     st.page_link("pages/2_아토피_설문.py", label="📋 아토피 설문 바로가기")
 
 # ── 4. 주변 피부과 찾기 ──────────────────────────────────────────
@@ -144,7 +145,7 @@ st.subheader("5. 보고서 저장")
 
 import datetime
 
-color_map_save = {"높음": "#e74c3c", "보통": "#f39c12", "낮음": "#2ecc71"}
+color_map_save = {"기준치 이상": "#e74c3c", "기준치 미만": "#2ecc71"}
 risk_color     = color_map_save.get(risk_level, "#888888")
 now_str        = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 
@@ -186,7 +187,7 @@ for r in predictions:
     </tr>"""
 prob_bars += "</table>"
 
-# 위험 요인 섹션
+# 예측에 영향을 준 주요 특성 섹션
 factors_section = ""
 if survey_features:
     _factors = get_risk_factors(survey_features)
@@ -200,12 +201,12 @@ if survey_features:
                 <div style='font-size:13px; color:#555;'>💡 {f['recommendation']}</div>
             </div>"""
         factors_section = f"""
-        <h2>2. 아토피 위험을 높이는 주요 요인 및 권고사항</h2>
+        <h2>2. 예측에 영향을 준 주요 특성 및 참고 정보</h2>
         {_factors_html}"""
     else:
         factors_section = """
-        <h2>2. 아토피 위험을 높이는 주요 요인</h2>
-        <p style='color:#27ae60;'>✅ 설문 응답에서 아토피 위험을 높이는 주요 요인이 발견되지 않았습니다.</p>"""
+        <h2>2. 예측에 영향을 준 주요 특성</h2>
+        <p style='color:#27ae60;'>✅ 설문 응답에서 예측 점수에 영향을 준 주요 특성이 발견되지 않았습니다.</p>"""
 
 html_report = f"""<!DOCTYPE html>
 <html lang='ko'>

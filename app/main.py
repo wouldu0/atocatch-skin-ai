@@ -1,5 +1,5 @@
 ﻿import streamlit as st
-import hashlib
+import bcrypt
 import sys, os
 sys.path.append(os.path.dirname(__file__))
 
@@ -19,7 +19,10 @@ st.set_page_config(
 apply_global_style()
 
 def hash_pw(pw: str) -> str:
-    return hashlib.sha256(pw.encode()).hexdigest()
+    return bcrypt.hashpw(pw.encode(), bcrypt.gensalt()).decode()
+
+def verify_pw(pw: str, hashed: str) -> bool:
+    return bcrypt.checkpw(pw.encode(), hashed.encode())
 
 # ── 세션 초기화 ─────────────────────────────────────────────
 if "user" not in st.session_state:
@@ -33,7 +36,7 @@ if st.session_state.user is None:
         st.image(LOGO_PATH, width=150)
     with col_title:
         st.title("AtoCatch")
-        st.caption("아토피 조기 예측 & 케어 솔루션")
+        st.caption("아토피 스크리닝 & 케어 솔루션")
     st.divider()
 
     tab_login, tab_signup = st.tabs(["로그인", "회원가입"])
@@ -45,7 +48,7 @@ if st.session_state.user is None:
             submitted = st.form_submit_button("로그인", width='stretch')
         if submitted:
             user = get_user(username)
-            if user and user["password"] == hash_pw(password):
+            if user and verify_pw(password, user["password"]):
                 st.session_state.user = user
                 st.success(f"{username}님, 환영합니다!")
                 st.rerun()
@@ -76,7 +79,7 @@ else:
         st.image(LOGO_PATH, width=150)
     with col_title:
         st.title("AtoCatch")
-        st.caption("아토피 조기 예측 & 케어 솔루션")
+        st.caption("아토피 스크리닝 & 케어 솔루션")
     st.divider()
 
     st.success(f"👤 {user['username']}님으로 로그인 중")
@@ -96,7 +99,7 @@ else:
     ### 사용 방법
     1. **📷 피부 분석** — 피부 사진을 업로드하면 5가지 피부 질환 예측 결과를 확인할 수 있습니다.
     2. **📋 아토피 설문** — 아토피가 1위로 예측된 경우 생활습관·병력 설문을 진행합니다.
-    3. **📊 위험도 보고서** — 예측 결과와 아토피 위험 요인 및 맞춤 권고사항을 확인합니다.
+    3. **📊 위험도 보고서** — 예측 결과와 예측에 영향을 준 주요 특성 및 참고 정보를 확인합니다.
     4. **🗂️ 내 기록** — 과거 분석 기록과 아토피 확률 변화 추이를 확인합니다.
 
     > ⚠️ AtoCatch는 의료 진단을 대체하지 않습니다. 정확한 진단은 반드시 전문의와 상담하세요.

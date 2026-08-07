@@ -4,6 +4,7 @@
 # ============================================================
 import os
 import time
+from pathlib import Path
 import pandas as pd
 import numpy as np
 from PIL import Image
@@ -19,10 +20,11 @@ import matplotlib.pyplot as plt
 plt.rcParams['font.family'] = 'Malgun Gothic'
 plt.rcParams['axes.unicode_minus'] = False
 
-# ── 설정 ──────────────────────────────────────────────────
-CSV_PATH        = r"E:\skin\skin_disease_mixed.csv"
+# ── 설정 (본인 환경에 맞게 수정) ──────────────────────────────
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+CSV_PATH        = PROJECT_ROOT / "data" / "skin_disease_mixed.csv"
 IMAGE_COL       = "image_path_300"
-SAVE_DIR        = r"E:\skin\models\mixed_comparison"
+SAVE_DIR        = PROJECT_ROOT / "models" / "mixed_comparison"
 os.makedirs(SAVE_DIR, exist_ok=True)
 
 BATCH_SIZE      = 32
@@ -38,7 +40,9 @@ SEED = 42
 torch.manual_seed(SEED)
 np.random.seed(SEED)
 torch.cuda.manual_seed_all(SEED)
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+DEVICE   = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+USE_AMP  = DEVICE.type == "cuda"
+AMP_TYPE = DEVICE.type
 print(f"Device: {DEVICE}")
 
 # ── 비교할 모델 목록 ────────────────────────────────────────
@@ -99,7 +103,7 @@ def train_one_epoch(model, loader, criterion, optimizer, scaler):
     for images, labels in tqdm(loader, desc="  Train", leave=False):
         images, labels = images.to(DEVICE), labels.to(DEVICE)
         optimizer.zero_grad()
-        with torch.amp.autocast("cuda"):
+        with torch.amp.autocast(AMP_TYPE, enabled=USE_AMP):
             out  = model(images)
             loss = criterion(out, labels)
         scaler.scale(loss).backward()
@@ -118,7 +122,7 @@ def evaluate(model, loader):
     with torch.no_grad():
         for images, labels in loader:
             images = images.to(DEVICE)
-            with torch.amp.autocast("cuda"):
+            with torch.amp.autocast(AMP_TYPE, enabled=USE_AMP):
                 out = model(images)
             all_preds.extend(out.argmax(1).cpu().numpy())
             all_labels.extend(labels.numpy())
@@ -162,7 +166,7 @@ for model_name, img_size in MODELS:
     criterion = nn.CrossEntropyLoss(label_smoothing=LABEL_SMOOTHING, weight=class_weights)
     optimizer = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=EPOCHS)
-    scaler    = torch.amp.GradScaler("cuda")
+    scaler    = torch.amp.GradScaler(AMP_TYPE, enabled=USE_AMP)
 
     best_acc, best_f1 = 0.0, 0.0
     t0 = time.time()
@@ -172,7 +176,7 @@ for model_name, img_size in MODELS:
         val_acc, val_f1  = evaluate(model, val_loader)
         scheduler.step()
 
-        if val_acc > best_acc:
+        if val_f1 > best_f1:
             best_acc = val_acc
             best_f1  = val_f1
             torch.save(model.state_dict(),
@@ -196,7 +200,7 @@ for model_name, img_size in MODELS:
 
 
 # ── 결과 정리 ───────────────────────────────────────────────
-result_df = pd.DataFrame(results).sort_values("Best Val Acc", ascending=False)
+result_df = pd.DataFrame(results).sort_values("Macro F1", ascending=False)
 print("\n" + "="*65)
 print("  혼합 데이터 모델 비교 결과 (10 epoch)")
 print("="*65)

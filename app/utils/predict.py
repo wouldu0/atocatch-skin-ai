@@ -36,7 +36,7 @@ def predict(image: Image.Image):
     model, device = load_model()
     tensor = TRANSFORM(image).unsqueeze(0).to(device)
     with torch.no_grad():
-        with torch.amp.autocast("cuda") if device.type == "cuda" else torch.no_grad():
+        with torch.amp.autocast(device.type, enabled=(device.type == "cuda")):
             logits = model(tensor)
         probs = torch.softmax(logits, dim=1).squeeze().cpu().tolist()
 

@@ -1,9 +1,10 @@
 # ============================================================
 # 실제 인터넷 이미지 테스트: EfficientNetV2-S v4 (아토피 정제)
-# 폴더 구조: E:/skin/test_real/{클래스명}/{이미지파일}
+# 폴더 구조: {TEST_DIR}/{클래스명}/{이미지파일}
 # ============================================================
 import os
 import sys
+from pathlib import Path
 import numpy as np
 from PIL import Image
 import torch
@@ -23,10 +24,11 @@ if sys.stdout.encoding != 'utf-8':
 plt.rcParams['font.family'] = 'Malgun Gothic'
 plt.rcParams['axes.unicode_minus'] = False
 
-# ── 설정 ──────────────────────────────────────────────────
-MODEL_PATH  = r"E:\skin\models\mixed_v4\efficientnetv2_s_tuned.pth"
-TEST_DIR    = r"E:\skin\test_real"
-SAVE_DIR    = r"E:\skin\test_real_results_v4"
+# ── 설정 (본인 환경에 맞게 수정) ──────────────────────────────
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+MODEL_PATH  = PROJECT_ROOT / "models" / "mixed_v4" / "efficientnetv2_s_tuned.pth"
+TEST_DIR    = PROJECT_ROOT / "data" / "test_real"
+SAVE_DIR    = PROJECT_ROOT / "models" / "test_real_results_v4"
 os.makedirs(SAVE_DIR, exist_ok=True)
 
 CLASS_NAMES = ["정상", "아토피", "건선", "여드름", "주사"]

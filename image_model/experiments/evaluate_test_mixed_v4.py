@@ -5,6 +5,7 @@
 # 3) 전체 test    (합산)
 # ============================================================
 import os
+from pathlib import Path
 import numpy as np
 import pandas as pd
 from PIL import Image
@@ -21,15 +22,18 @@ from tqdm import tqdm
 plt.rcParams['font.family'] = 'Malgun Gothic'
 plt.rcParams['axes.unicode_minus'] = False
 
-# ── 설정 ──────────────────────────────────────────────────
-CSV_PATH   = r"E:\skin\skin_disease_mixed_v2.csv"
-MODEL_PATH = r"E:\skin\models\mixed_v4\efficientnetv2_s_tuned.pth"
-SAVE_DIR   = r"E:\skin\models\mixed_v4"
+# ── 설정 (본인 환경에 맞게 수정) ──────────────────────────────
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+CSV_PATH   = PROJECT_ROOT / "data" / "skin_disease_mixed_v2.csv"
+MODEL_PATH = PROJECT_ROOT / "models" / "mixed_v4" / "efficientnetv2_s_tuned.pth"
+SAVE_DIR   = PROJECT_ROOT / "models" / "mixed_v4"
 IMAGE_COL  = "image_path_300"
 CLASS_NAMES = ["정상", "아토피", "건선", "여드름", "주사"]
 IMG_SIZE   = 300
 BATCH_SIZE = 32
 DEVICE     = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+USE_AMP    = DEVICE.type == "cuda"
+AMP_TYPE   = DEVICE.type
 print(f"Device: {DEVICE}")
 
 # ── Dataset ────────────────────────────────────────────────
@@ -69,7 +73,7 @@ def run_inference(df, desc=""):
     with torch.no_grad():
         for images, labels in tqdm(loader, desc=desc, leave=False):
             images = images.to(DEVICE)
-            with torch.amp.autocast("cuda"):
+            with torch.amp.autocast(AMP_TYPE, enabled=USE_AMP):
                 out = model(images)
             all_preds.extend(out.argmax(1).cpu().numpy())
             all_labels.extend(labels.numpy())

@@ -1,5 +1,5 @@
 """
-03_tune_cv.py (찐찐찐최종)
+03_survey_tune_cv.py
 
 목표:
   모든 후보(모델 × 불균형처리 × HP)를 5-fold StratifiedKFold로 평가.
@@ -17,7 +17,7 @@
   - 불균형 처리: none / class_weight / SMOTEN_0.5 / SMOTEN_1.0
   - HP grid (모델별)
 
-산출물 (D:\\시각화세미2\\찐찐찐최종\\03_튜닝CV\\):
+산출물 (survey_model/outputs/tuning_cv/):
   - cv_results_<label>.csv  : 모든 HP 조합의 fold별 mean/std
   - candidates_all.csv      : 전체 후보 통합 ranking
   - tuning_results.json     : 모델별 best (HP + 불균형처리)
@@ -54,10 +54,9 @@ import lightgbm as lgb
 warnings.filterwarnings('ignore')
 
 # ===== 경로 =====
-ROOT_OLD = Path(r"D:\시각화세미2\찐찐최종")
-ROOT_NEW = Path(r"D:\시각화세미2\찐찐찐최종")
-DATA_DIR = ROOT_OLD / "01_데이터"
-OUT_DIR = ROOT_NEW / "03_튜닝CV"
+SURVEY_DIR = Path(__file__).resolve().parent
+DATA_DIR = SURVEY_DIR / "data"          # 02_prepare_features.py의 출력(model_dataset.csv)
+OUT_DIR = SURVEY_DIR / "outputs" / "tuning_cv"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 TARGET = 'DL1_dg'

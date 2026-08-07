@@ -94,7 +94,7 @@ for r in records:
             from utils.atopy_model import get_risk_factors
             factors = get_risk_factors(r["survey_features"])
             if factors:
-                st.markdown("**📌 아토피 위험 요인 TOP 3**")
+                st.markdown("**📌 예측에 영향을 준 주요 특성 TOP 3**")
                 for i, f in enumerate(factors[:3], 1):
                     st.markdown(
                         f"""
