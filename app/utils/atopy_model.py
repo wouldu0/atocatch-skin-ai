@@ -19,7 +19,7 @@ from config import SURVEY_MODEL_PATH
 
 MODEL_PKL = SURVEY_MODEL_PATH
 
-# 운영 threshold (survey_model/04_threshold_analysis.py 산출)
+# 운영 threshold (survey_model/05_threshold_analysis.py 산출)
 # calibration holdout set에서 Youden's J(sensitivity+specificity 균형) 기준으로 선정,
 # 최종 test set에는 이 값을 고정해 1회만 적용함 (test 재사용 없음).
 THRESHOLD = 0.11
@@ -80,16 +80,22 @@ def predict_atopy_prob(features: dict) -> float:
 
 
 def get_risk_level(prob: float) -> tuple[str, str]:
-    """prob과 운영 threshold(THRESHOLD)를 비교해 이진 결과를 반환.
+    """prob과 운영 threshold(THRESHOLD)를 비교해 이진 스크리닝 결과를 반환.
 
     3단계(낮음/보통/높음) 대신 이진 판정만 쓰는 이유: 분석으로 얻은 운영점은
     THRESHOLD 하나뿐이라, 등급을 더 나누면 그 경계에 대한 별도 통계적 근거가
     없어집니다.
     """
     if prob >= THRESHOLD:
-        return "기준치 이상", "예측 점수가 모델 기준치 이상입니다. 피부 상태 확인이 필요하다면 전문의 상담을 고려해 주세요."
+        return (
+            "스크리닝 기준치 이상",
+            "입력한 정보에서 아토피 진단군과 유사한 패턴이 확인되었습니다. 피부 증상이 있다면 전문의 상담을 고려해 주세요.",
+        )
     else:
-        return "기준치 미만", "예측 점수가 모델 기준치 미만입니다. 피부 청결과 보습을 꾸준히 유지하세요."
+        return (
+            "스크리닝 기준치 미만",
+            "입력한 정보에서 아토피 진단군과 유사한 패턴이 뚜렷하게 확인되지 않았습니다. 피부 청결과 보습을 꾸준히 유지하세요.",
+        )
 
 
 def get_risk_factors(features: dict) -> list[dict]:

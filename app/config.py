@@ -7,9 +7,9 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 # 이미지 분류 모델 (.pth 파일) — image_model/04_image_train.py의 산출물
-IMAGE_MODEL_PATH = PROJECT_ROOT / "image_model" / "models" / "mixed_v3" / "efficientnetv2_s_tuned.pth"
+IMAGE_MODEL_PATH = PROJECT_ROOT / "models" / "mixed_v3" / "efficientnetv2_s_tuned.pth"
 
-# 문진형 관련도 모델 (.pkl 파일) — survey_model/04_survey_select_retrain.py의 산출물
+# 문진형 스크리닝 모델 (.pkl 파일) — survey_model/04_survey_select_retrain.py의 산출물
 SURVEY_MODEL_PATH = PROJECT_ROOT / "survey_model" / "outputs" / "final_model" / "best_model.pkl"
 
 # 사용자 업로드 이미지 저장 폴더

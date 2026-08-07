@@ -96,7 +96,7 @@ if uploaded:
                      width='stretch')
     else:
         st.info(f"**{top['label']}** 가능성이 높습니다. 정확한 진단은 전문의와 상담하세요.")
-        st.page_link("pages/3_위험도_보고서.py", label="📊 보고서 확인",
+        st.page_link("pages/3_분석_보고서.py", label="📊 보고서 확인",
                      width='stretch')
 
     st.caption("⚠️ 이 결과는 의료 진단이 아닙니다. 반드시 전문의와 상담하세요.")

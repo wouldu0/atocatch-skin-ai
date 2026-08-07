@@ -5,7 +5,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from utils.atopy_model import get_risk_factors
 from utils.style import apply_global_style
 
-st.set_page_config(page_title="위험도 보고서", page_icon="📊", layout="centered")
+st.set_page_config(page_title="분석 보고서", page_icon="📊", layout="centered")
 apply_global_style()
 
 if "user" not in st.session_state or st.session_state.user is None:
@@ -26,7 +26,7 @@ risk_level   = st.session_state.get("risk_level")
 risk_desc    = st.session_state.get("risk_desc")
 image_path   = st.session_state.get("last_image_path")
 
-st.title("📊 위험도 보고서")
+st.title("📊 종합 분석 보고서")
 st.divider()
 
 # ── 1. AI 이미지 분석 결과 ──────────────────────────────────────
@@ -145,7 +145,7 @@ st.subheader("5. 보고서 저장")
 
 import datetime
 
-color_map_save = {"기준치 이상": "#e74c3c", "기준치 미만": "#2ecc71"}
+color_map_save = {"스크리닝 기준치 이상": "#e74c3c", "스크리닝 기준치 미만": "#2ecc71"}
 risk_color     = color_map_save.get(risk_level, "#888888")
 now_str        = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 

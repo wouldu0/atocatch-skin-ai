@@ -20,8 +20,8 @@ if "last_record_id" not in st.session_state:
     st.page_link("pages/1_피부질환_예측.py", label="📷 피부 분석으로 이동")
     st.stop()
 
-st.title("📋 아토피 관련도 설문")
-st.caption("아래 7개 문항에 응답하면 AI가 KNHANES 데이터 기반으로 아토피 진단 이력과의 관련도를 분석합니다.")
+st.title("📋 아토피 가능성 스크리닝 설문")
+st.caption("아래 7개 문항에 응답하면 AI가 KNHANES 데이터 기반으로 아토피 진단군과의 패턴 유사도를 분석합니다.")
 st.divider()
 
 with st.form("survey_form"):
@@ -107,5 +107,5 @@ if submitted:
     st.divider()
     st.success("설문이 완료됐습니다! 보고서에서 예측에 영향을 준 특성을 확인하세요.")
     st.markdown("")
-    st.page_link("pages/3_위험도_보고서.py", label="📊 최종 보고서 확인",
+    st.page_link("pages/3_분석_보고서.py", label="📊 최종 보고서 확인",
                  width='stretch')

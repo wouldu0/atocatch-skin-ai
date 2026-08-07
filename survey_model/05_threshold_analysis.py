@@ -2,22 +2,19 @@
 05_threshold_analysis.py
 
 목표:
-  Best 모델의 임계값(threshold) 선택 + F1/Precision/Recall/Accuracy 평가.
+  Best 모델의 운영 threshold를 calibration set에서 선정하고, test set에는
+  그 threshold 하나만 고정 적용해 1회 평가.
 
 규칙 (leakage 방지):
   - threshold는 calibration set(pred_best_calib.csv)에서만 선택
-  - test set은 정해진 threshold를 적용해 단 1회 평가
-
-Operating points (3개):
-  1) default 0.5
-  2) F1-optimal (calib에서 F1 최대인 threshold 선택 → test 적용)
-  3) Youden's J (calib에서 sens+spec−1 최대 threshold 선택 → test 적용)
+  - test set은 채택된 threshold(Youden's J) 하나로만 1회 평가
+  - F1-optimal은 calib에서의 비교값으로만 계산·기록하고, test에는 적용하지 않음
+    (앱 운영 threshold로 F1-optimal이 아닌 Youden's J를 채택했기 때문)
 
 산출물 (survey_model/outputs/threshold_analysis/):
-  - threshold_metrics.csv  : 3개 operating point의 test 성능 표
-  - f1_curve_test.png      : threshold별 F1/Prec/Recall (test, 참고용)
-  - f1_curve_calib.png     : threshold별 F1/Prec/Recall (calib, 선택 근거)
-  - threshold_summary.json : best threshold + test 메트릭 + bootstrap CI
+  - threshold_metrics.csv  : 채택 threshold(Youden's J)의 test 성능
+  - f1_curve_calib.png     : calib에서 threshold별 F1/Prec/Recall (선택 근거)
+  - threshold_summary.json : calib 비교값(F1-optimal/Youden's J) + test 최종 결과
 """
 
 import json
@@ -116,21 +113,6 @@ def find_thresholds(y_calib, p_calib):
     return df, best_f1_thr, best_youden_thr
 
 
-def threshold_curve(y_true, y_score):
-    """y_score에 대해 threshold 변화에 따른 F1/Prec/Recall 곡선."""
-    thresholds = np.linspace(0.01, 0.99, 99)
-    rows = []
-    for thr in thresholds:
-        yp = (y_score >= thr).astype(int)
-        rows.append({
-            'threshold': float(thr),
-            'F1': f1_score(y_true, yp, zero_division=0),
-            'Precision': precision_score(y_true, yp, zero_division=0),
-            'Recall': recall_score(y_true, yp, zero_division=0),
-        })
-    return pd.DataFrame(rows)
-
-
 def plot_curve(df, title, save_path):
     fig, ax = plt.subplots(figsize=(9, 6))
     ax.plot(df['threshold'], df['F1'], lw=2, label='F1', color='#d62728')
@@ -184,60 +166,46 @@ def main():
     print(f"[로드] calib n={len(y_calib)} (양성률={y_calib.mean():.4f})")
     print(f"[로드] test  n={len(y_test)} (양성률={y_test.mean():.4f})")
 
-    # 1) calib 기반 threshold 탐색
+    # 1) calib 기반 threshold 탐색 (F1-optimal은 비교값으로만 계산)
     print("\n[1] calib set에서 threshold 탐색")
     df_calib_curve, f1_opt_thr, youden_thr = find_thresholds(y_calib, p_calib)
-    print(f"  F1-optimal threshold (calib) = {f1_opt_thr:.3f}")
-    print(f"  Youden's J threshold (calib) = {youden_thr:.3f}")
+    print(f"  F1-optimal threshold (calib, 비교값)  = {f1_opt_thr:.3f}")
+    print(f"  Youden's J threshold (calib, 채택값) = {youden_thr:.3f}")
 
-    # 2) test에서 3가지 operating point 평가
-    print("\n[2] test set 평가")
-    operating_points = [
-        ('default_0.5', 0.5),
-        ('F1_optimal', f1_opt_thr),
-        ('Youden_J', youden_thr),
-    ]
+    # 2) test에는 채택된 threshold(Youden's J) 하나만 1회 적용
+    print("\n[2] test set 평가 (Youden's J threshold 고정 적용)")
+    thr = youden_thr
+    yp = (p_test >= thr).astype(int)
+    m = hard_metrics(y_test, yp)
+    ci = bootstrap_ci_f1(y_test, p_test, thr, N_BOOTSTRAP, SEED)
+    m['threshold'] = thr
+    m['operating_point'] = 'Youden_J'
+    m['F1_CI'] = f"[{ci['F1'][0]:.3f}, {ci['F1'][1]:.3f}]"
+    m['Precision_CI'] = f"[{ci['Precision'][0]:.3f}, {ci['Precision'][1]:.3f}]"
+    m['Recall_CI'] = f"[{ci['Recall'][0]:.3f}, {ci['Recall'][1]:.3f}]"
 
-    rows = []
-    summary = {}
-    for name, thr in operating_points:
-        yp = (p_test >= thr).astype(int)
-        m = hard_metrics(y_test, yp)
-        ci = bootstrap_ci_f1(y_test, p_test, thr, N_BOOTSTRAP, SEED)
-        m['threshold'] = thr
-        m['operating_point'] = name
-        m['F1_CI'] = f"[{ci['F1'][0]:.3f}, {ci['F1'][1]:.3f}]"
-        m['Precision_CI'] = f"[{ci['Precision'][0]:.3f}, {ci['Precision'][1]:.3f}]"
-        m['Recall_CI'] = f"[{ci['Recall'][0]:.3f}, {ci['Recall'][1]:.3f}]"
-        rows.append(m)
-        summary[name] = {**m, 'CI': ci}
-
-        print(f"\n  [{name}] threshold={thr:.3f}")
-        print(f"    F1        = {m['F1']:.4f}  CI{m['F1_CI']}")
-        print(f"    Precision = {m['Precision']:.4f}  CI{m['Precision_CI']}")
-        print(f"    Recall    = {m['Recall']:.4f}  CI{m['Recall_CI']}")
-        print(f"    Spec      = {m['Specificity']:.4f}")
-        print(f"    Accuracy  = {m['Accuracy']:.4f}")
-        print(f"    Confusion = TP={m['TP']} FP={m['FP']} "
-              f"TN={m['TN']} FN={m['FN']}")
+    print(f"\n  [Youden_J] threshold={thr:.3f}")
+    print(f"    F1        = {m['F1']:.4f}  CI{m['F1_CI']}")
+    print(f"    Precision = {m['Precision']:.4f}  CI{m['Precision_CI']}")
+    print(f"    Recall    = {m['Recall']:.4f}  CI{m['Recall_CI']}")
+    print(f"    Spec      = {m['Specificity']:.4f}")
+    print(f"    Accuracy  = {m['Accuracy']:.4f}")
+    print(f"    Confusion = TP={m['TP']} FP={m['FP']} "
+          f"TN={m['TN']} FN={m['FN']}")
 
     # 3) 표 저장
     cols = ['operating_point', 'threshold', 'F1', 'F1_CI',
             'Precision', 'Precision_CI', 'Recall', 'Recall_CI',
             'Specificity', 'Accuracy', 'TP', 'FP', 'TN', 'FN']
-    df_out = pd.DataFrame(rows)[cols]
+    df_out = pd.DataFrame([m])[cols]
     df_out.to_csv(OUT_DIR / "threshold_metrics.csv",
                   index=False, encoding='utf-8-sig')
 
-    # 4) 곡선 시각화
-    print("\n[3] threshold 곡선 그리기")
-    df_test_curve = threshold_curve(y_test, p_test)
+    # 4) calib 곡선 시각화 (threshold 선택 근거 — test는 그리지 않음)
+    print("\n[3] calib threshold 곡선 그리기")
     plot_curve(df_calib_curve,
-               f'Threshold vs Score (calib, F1-opt={f1_opt_thr:.2f})',
+               f'Threshold vs Score (calib, Youden 채택={youden_thr:.2f})',
                OUT_DIR / "f1_curve_calib.png")
-    plot_curve(df_test_curve,
-               f'Threshold vs Score (test, 참고용)',
-               OUT_DIR / "f1_curve_test.png")
 
     # 5) JSON 요약
     with open(config_path, encoding='utf-8') as f:
@@ -246,15 +214,15 @@ def main():
     summary_json = {
         'model': best_config.get('model_name'),
         'imbalance': best_config.get('imbalance'),
-        'thresholds_chosen_on_calib': {
+        'thresholds_compared_on_calib': {
             'F1_optimal': f1_opt_thr,
             'Youden_J': youden_thr,
-            'default': 0.5,
         },
-        'test_results': summary,
+        'threshold_adopted': 'Youden_J',
+        'test_result': {**m, 'CI': ci},
         'note': (
-            "F1_optimal/Youden_J threshold는 calib set에서 선택 후 "
-            "test에 1회 적용. default 0.5는 비교용."
+            "F1_optimal과 Youden_J는 calib set에서 비교만 하고, "
+            "test set에는 채택된 Youden_J threshold 하나만 1회 적용했습니다."
         ),
     }
     with open(OUT_DIR / "threshold_summary.json", 'w', encoding='utf-8') as f:

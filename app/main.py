@@ -64,8 +64,8 @@ if st.session_state.user is None:
         if submitted:
             if new_pw != new_pw2:
                 st.error("비밀번호가 일치하지 않습니다.")
-            elif len(new_pw) < 4:
-                st.error("비밀번호는 4자 이상이어야 합니다.")
+            elif len(new_pw) < 8:
+                st.error("비밀번호는 8자 이상이어야 합니다.")
             elif create_user(new_user, hash_pw(new_pw)):
                 st.success("가입 완료! 로그인해주세요.")
             else:
@@ -90,7 +90,7 @@ else:
     with col2:
         st.page_link("pages/2_아토피_설문.py", label="📋 아토피 설문", width='stretch')
     with col3:
-        st.page_link("pages/3_위험도_보고서.py", label="📊 위험도 보고서", width='stretch')
+        st.page_link("pages/3_분석_보고서.py", label="📊 분석 보고서", width='stretch')
     with col4:
         st.page_link("pages/4_내_기록.py", label="🗂️ 내 기록", width='stretch')
 
@@ -99,7 +99,7 @@ else:
     ### 사용 방법
     1. **📷 피부 분석** — 피부 사진을 업로드하면 5가지 피부 질환 예측 결과를 확인할 수 있습니다.
     2. **📋 아토피 설문** — 아토피가 1위로 예측된 경우 생활습관·병력 설문을 진행합니다.
-    3. **📊 위험도 보고서** — 예측 결과와 예측에 영향을 준 주요 특성 및 참고 정보를 확인합니다.
+    3. **📊 분석 보고서** — 예측 결과와 예측에 영향을 준 주요 특성 및 참고 정보를 확인합니다.
     4. **🗂️ 내 기록** — 과거 분석 기록과 아토피 확률 변화 추이를 확인합니다.
 
     > ⚠️ AtoCatch는 의료 진단을 대체하지 않습니다. 정확한 진단은 반드시 전문의와 상담하세요.

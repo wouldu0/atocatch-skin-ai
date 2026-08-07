@@ -45,10 +45,8 @@ if len(atopy_df) > 1:
     fig, ax = plt.subplots(figsize=(10, 3))
     ax.plot(atopy_df["날짜"], atopy_df["아토피 확률"],
             marker="o", color="#e74c3c", linewidth=2)
-    ax.axhline(y=30, color="gray", linestyle="--", alpha=0.5, label="주의선 (30%)")
     ax.set_ylabel("아토피 확률 (%)")
     ax.set_ylim(0, 100)
-    ax.legend()
     plt.xticks(rotation=30, fontsize=9)
     plt.tight_layout()
     st.pyplot(fig)
@@ -131,7 +129,7 @@ for r in records:
                 else:
                     for k in ["atopy_prob", "risk_level", "risk_desc", "survey_features"]:
                         st.session_state.pop(k, None)
-                st.switch_page("pages/3_위험도_보고서.py")
+                st.switch_page("pages/3_분석_보고서.py")
 
         # 설문 진행 버튼 (아토피 1위 & 설문 미완료일 때만)
         with btn_col2:
