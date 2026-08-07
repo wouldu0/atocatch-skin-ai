@@ -6,15 +6,14 @@ sys.path.append(os.path.dirname(__file__))
 from utils.db import init_db, get_user, create_user
 from utils.style import apply_global_style
 
-# "C:/Users/asia/anaconda3/envs/skin/Scripts/streamlit.exe" run E:/skin/app/main.py
-# C:/Users/asia/anaconda3/envs/skin/python.exe -m streamlit run E:/skin/app/main.py
+LOGO_PATH = os.path.join(os.path.dirname(__file__), "assets/logo.png")
 
 # ── 초기화 ──────────────────────────────────────────────────
 init_db()
 
 st.set_page_config(
     page_title="AtoCatch",
-    page_icon="E:/skin/app/assets/logo.png",
+    page_icon=LOGO_PATH,
     layout="centered",
 )
 apply_global_style()
@@ -27,7 +26,6 @@ if "user" not in st.session_state:
     st.session_state.user = None
 
 # ── 로그인/회원가입 ─────────────────────────────────────────
-LOGO_PATH = os.path.join(os.path.dirname(__file__), "assets/logo.png")
 
 if st.session_state.user is None:
     col_logo, col_title = st.columns([1, 2.5])

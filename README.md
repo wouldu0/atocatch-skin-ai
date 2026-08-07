@@ -117,7 +117,7 @@ AtoCatch/
 ### 1. 환경 설치
 
 ```bash
-pip install torch torchvision timm streamlit scikit-learn lightgbm imbalanced-learn optuna pandas numpy pillow matplotlib seaborn
+pip install torch torchvision timm streamlit scikit-learn lightgbm imbalanced-learn optuna pandas numpy pillow matplotlib seaborn scipy statsmodels tqdm
 ```
 
 ### 2. 이미지 모델 학습 (순서대로 실행)
