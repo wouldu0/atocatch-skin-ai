@@ -187,7 +187,7 @@ python survey_model/05_threshold_analysis.py     # 운영 threshold 산출
 
 ### 4. 웹 앱 실행
 
-`app/config.py`의 경로를 본인 환경에 맞게 수정한 후 (아래 "경로 설정" 참고):
+이미지·문진 모델 학습을 완료한 후:
 
 ```bash
 streamlit run app/main.py
@@ -203,7 +203,7 @@ streamlit run app/main.py
 # app/config.py
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
-IMAGE_MODEL_PATH  = PROJECT_ROOT / "image_model" / "models" / "mixed_v3" / "efficientnetv2_s_tuned.pth"
+IMAGE_MODEL_PATH  = PROJECT_ROOT / "models" / "mixed_v3" / "efficientnetv2_s_tuned.pth"
 SURVEY_MODEL_PATH = PROJECT_ROOT / "survey_model" / "outputs" / "final_model" / "best_model.pkl"
 UPLOAD_DIR        = PROJECT_ROOT / "app" / "data" / "uploads"
 DB_PATH           = PROJECT_ROOT / "app" / "data" / "skin_app.db"
