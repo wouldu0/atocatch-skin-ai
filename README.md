@@ -123,12 +123,11 @@ Logistic Regression + Calibration
 
 | 피부 상태 분류 | 아토피 가능성 스크리닝 |
 |---|---|
-| <img src="assets/image_result.png" width="420"> | <img src="assets/survey.png" width="420"> |
+| <img src="assets/image_result.png" width="320"> | <img src="assets/survey.png" width="320"> |
 
-<p align="center">
-  <img src="assets/report.png" width="700">
-</p>
-<p align="center"><sub>이미지 분석과 건강설문 결과를 종합한 분석 보고서</sub></p>
+| 주변 피부과 찾기 | 종합 분석 보고서 |
+|---|---|
+| <img src="assets/nearby.png" width="320"> | <img src="assets/report.png" width="320"> |
 
 ---
 
