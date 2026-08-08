@@ -125,9 +125,9 @@ Logistic Regression + Calibration
 |---|---|
 | <img src="assets/image_result.png" width="320"> | <img src="assets/survey.png" width="320"> |
 
-| 주변 피부과 찾기 | 종합 분석 보고서 |
+| 종합 분석 보고서 | 주변 피부과 찾기 |
 |---|---|
-| <img src="assets/nearby.png" width="320"> | <img src="assets/report.png" width="320"> |
+| <img src="assets/report.png" width="320"> | <img src="assets/nearby.png" width="320"> |
 
 ---
 
