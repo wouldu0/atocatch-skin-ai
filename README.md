@@ -7,6 +7,8 @@
 
 ![AtoCatch 시연](demo.gif)
 
+
+</div>
 ---
 
 ## 📌 프로젝트 소개
