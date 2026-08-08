@@ -37,3 +37,6 @@ Thumbs.db
 *.csv
 *.npz
 *.json
+
+# README용 서비스 화면 스크린샷은 예외로 추적
+!assets/*.png
