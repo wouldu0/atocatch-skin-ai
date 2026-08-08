@@ -1,3 +1,4 @@
+<div align="center">
 # 🧴 AtoCatch
 
 **AI 기반 피부 상태 분류 및 아토피 가능성 스크리닝 서비스**
