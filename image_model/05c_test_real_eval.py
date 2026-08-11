@@ -2,9 +2,9 @@
 # 실제 인터넷 이미지 테스트 (외부 실사 25장, 동일 셋으로 모델 간 비교용)
 # 폴더 구조: {TEST_DIR}/{클래스명}/{이미지파일}
 #
-# 사용법: python 05c_test_real_eval.py [original|dedup]
-#   original -> models/mixed_v3 (기존 모델) 평가
-#   dedup    -> models/mixed_v3_dedup (DermNet cross-split dup 제거 재학습 모델) 평가
+# 사용법: python 05c_test_real_eval.py [legacy|dedup]
+#   legacy -> models/mixed_v3_legacy_preleakfix (cross-split dup 제거 전 기존 모델) 평가
+#   dedup  -> models/mixed_v3 (DermNet cross-split dup 제거 재학습 모델, 현재 production) 평가
 # 두 variant 모두 동일한 data/test_real 25장, 동일 평가 코드로 실행해
 # 조건을 통일한 비교가 가능하도록 한다.
 # ============================================================

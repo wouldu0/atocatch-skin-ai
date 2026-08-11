@@ -87,16 +87,33 @@ EfficientNet-B2가 파라미터 수(7.7M)와 학습 시간(7.4분) 면에서는 
 
 ### 설문 스크리닝 모델
 
-| 지표 | 결과 |
+| 지표 | 최종 값 |
 |---|---:|
-| ROC-AUC | 0.786 |
-| PR-AUC | 0.3275 |
-| 운영 Threshold | 0.11 (Youden's J) |
-| Test Recall | 0.67 |
-| Test Precision | 0.28 |
-| Test F1 | 0.40 |
+| Test ROC-AUC (calibrated) | 0.7836 |
+| Test PR-AUC (calibrated) | 0.3282 |
+| Brier score | 0.0850 |
+| Operational threshold | 0.11 (Youden's J) |
+| Recall @ 0.11 | 0.67 |
+| Precision @ 0.11 | 0.28 |
+| F1 @ 0.11 | 0.40 |
 
-Threshold는 calibration holdout에서 선정한 뒤 고정하여 최종 test set에 1회 적용했습니다.
+Threshold는 calibration holdout에서 선정한 뒤 고정하여 최종 test set에 1회 적용했습니다. 위 지표는 모두 isotonic calibration을 거친 확률 기준이며, 앱이 실제로 사용하는 것도 이 calibrated 확률입니다.
+
+<details>
+<summary>🔬 왜 Logistic Regression을 선택했는지 보기 — 모델 후보 비교</summary>
+
+5-fold CV로 LogReg·RandomForest·LightGBM·MLP 후보를 비교했습니다 (`survey_model/03_survey_tune_cv.py`).
+
+| 모델 | CV ROC-AUC | CV PR-AUC |
+|---|---:|---:|
+| RandomForest | 0.7866 | 0.3207 |
+| MLP | 0.7861 | 0.3191 |
+| **LogReg (선정)** | 0.7860 | **0.3275** |
+| LightGBM | 0.7834 | 0.3174 |
+
+RandomForest·MLP가 CV ROC-AUC는 근소하게 더 높았지만, "ROC-AUC 상위 후보군(±0.001) 중 PR-AUC가 가장 높은 모델을 선정"하는 기준(`04_survey_select_retrain.py`)을 그대로 적용해도 LogReg가 선택됩니다. 계수(`coef_`) 기반으로 예측에 영향을 준 특성을 보여주는 서비스 요구사항과도 맞아떨어져 production 모델을 LogReg로 고정했습니다.
+
+</details>
 
 ---
 
@@ -189,6 +206,8 @@ atocatch-skin-ai/
 
 <details>
 <summary><b>⚙️ 실행 방법</b></summary>
+
+> ⚠️ 원천 이미지·설문 데이터와 학습된 모델 artifact(`.pth`/`.pkl`)는 배포 권한·용량 문제로 저장소에 포함되어 있지 않습니다. 아래는 코드와 실행 절차이며, 학습을 재현하거나 앱을 직접 구동하려면 데이터와 artifact를 별도로 준비해야 합니다.
 
 **환경 설치**
 ```bash
