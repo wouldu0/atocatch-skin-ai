@@ -71,7 +71,7 @@ class SkinDataset(Dataset):
 
     def __getitem__(self, idx):
         row = self.df.iloc[idx]
-        image = Image.open(row[IMAGE_COL]).convert("RGB")
+        image = Image.open(PROJECT_ROOT / row[IMAGE_COL]).convert("RGB")
         return self.transform(image), int(row["label"])
 
 

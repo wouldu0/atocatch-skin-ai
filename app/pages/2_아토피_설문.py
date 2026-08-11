@@ -20,6 +20,13 @@ if "last_record_id" not in st.session_state:
     st.page_link("pages/1_피부질환_예측.py", label="📷 피부 분석으로 이동")
     st.stop()
 
+# 아토피 설문은 최근 이미지 분석의 top1 라벨이 '아토피'일 때만 진행 가능
+# (last_record_id 존재만으로는 비아토피 분석 이후에도 설문 페이지에 직접 접근할 수 있었음)
+if st.session_state.get("last_top_label") != "아토피":
+    st.warning("아토피 설문은 피부 분석 결과 1순위가 '아토피'로 예측된 경우에만 진행할 수 있습니다.")
+    st.page_link("pages/1_피부질환_예측.py", label="📷 피부 분석으로 이동")
+    st.stop()
+
 st.title("📋 아토피 가능성 스크리닝 설문")
 st.caption("아래 7개 문항에 응답하면 AI가 KNHANES 데이터 기반으로 아토피 진단군과의 패턴 유사도를 분석합니다.")
 st.divider()

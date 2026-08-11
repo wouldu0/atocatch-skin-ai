@@ -1,11 +1,8 @@
 # ============================================================
 # 최종 테스트 평가 - 혼합 모델
-# 1) AI Hub hold-out test  (합성 이미지)
-# 2) DermNet 재분할 hold-out test (실제 이미지, cross-split duplicate 제거됨)
-# 3) 전체 test (합산)
-#
-# skin_disease_mixed_dedup.csv(01b_dedup_split.py 산출) 기준 평가.
-# duplicate 제거 전 버전 평가는 05_image_evaluate_legacy.py로 보존.
+# 1) AI Hub hold-out test  (합성 이미지 500장 — 지루 제외 5클래스 × 100장)
+# 2) DermNet 재분할 hold-out test (실제 이미지 ~323장)
+# 3) 전체 test    (합산)
 # ============================================================
 import os
 from pathlib import Path
@@ -27,9 +24,9 @@ plt.rcParams['axes.unicode_minus'] = False
 
 # ── 설정 (본인 환경에 맞게 수정) ──────────────────────────────
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-CSV_PATH   = PROJECT_ROOT / "data" / "skin_disease_mixed_dedup.csv"
-MODEL_PATH = PROJECT_ROOT / "models" / "mixed_v3" / "efficientnetv2_s_tuned.pth"
-SAVE_DIR   = PROJECT_ROOT / "models" / "mixed_v3"
+CSV_PATH   = PROJECT_ROOT / "data" / "skin_disease_mixed_legacy_preleakfix.csv"
+MODEL_PATH = PROJECT_ROOT / "models" / "mixed_v3_legacy_preleakfix" / "efficientnetv2_s_tuned.pth"
+SAVE_DIR   = PROJECT_ROOT / "models" / "mixed_v3_legacy_preleakfix"
 IMAGE_COL  = "image_path_300"
 CLASS_NAMES = ["정상", "아토피", "건선", "여드름", "주사"]
 IMG_SIZE   = 300

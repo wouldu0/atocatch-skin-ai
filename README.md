@@ -51,15 +51,18 @@ AtoCatch는 피부 이미지를 분석하는 이미지 분류 모델과 KNHANES 
 
 ## 📊 주요 결과
 
-> 먼저 쉽게 보면, **이미지 모델은 학습·정제된 데이터에서 99.60%의 정확도를 보였지만 실제 촬영 이미지에서는 52%까지 낮아져 실제 사용 환경과의 차이를 확인했고,** 설문 모델은 미래 발병을 예측하는 모델이 아니라 **현재 아토피 가능성을 가늠하는 보조 스크리닝 모델로 활용했습니다.**
+> 먼저 쉽게 보면, **이미지 모델은 실제 촬영 사진에 가까운 DermNet hold-out에서 91.98%(Macro F1 0.9240)를 기록했고, 합성 이미지를 포함한 전체 hold-out 합산으로는 96.84%(Macro F1 0.9728)까지 올라가지만, 완전히 독립된 외부 실사 이미지 25장에서는 13/25(52.0%)까지 낮아져 실제 사용 환경과의 차이를 확인했습니다.** 합성 데이터가 섞인 전체 수치보다 DermNet·외부 실사처럼 실제 촬영 환경에 가까운 평가가 이 모델의 실질적인 일반화 성능을 더 잘 보여줍니다. 설문 모델은 미래 발병을 예측하는 모델이 아니라 **현재 아토피 가능성을 가늠하는 보조 스크리닝 모델로 활용했습니다.**
 
 ### 이미지 분류 모델
 
 | 평가 데이터 | Accuracy | Macro F1 |
 |---|---:|---:|
-| AI Hub hold-out (합성, 500장) | 99.60% | 0.9960 |
-| DermNet 재분할 hold-out (실사, 약 323장) | 94.43% | 0.9486 |
+| AI Hub hold-out (합성, 499장) | 100.00% | 1.0000 |
+| DermNet hold-out (실사, 324장, duplicate-safe 재분할) | 91.98% | 0.9240 |
+| 전체 hold-out 합산 (823장) | 96.84% | 0.9728 |
 | 외부 실사 이미지 스팟체크 (25장) | 52.0% | - |
+
+> 포트폴리오 정리 감사에서 DermNet 원본 split에 train/test를 넘나드는 exact/near-duplicate 이미지가 있었음을 발견해(아래 "모델 검증과 의사결정" 참고), 중복 이미지를 그룹 단위로 같은 split에만 묶어 재분할한 뒤 **동일 아키텍처·하이퍼파라미터로 재학습**한 결과입니다. 이전 버전(94.43%/0.9486, 별도 test 구성)은 `image_model/04_image_train_legacy.py` / `models/mixed_v3_legacy_preleakfix/`에 비교 참고용으로 남겨뒀습니다.
 
 <details>
 <summary>🔬 왜 EfficientNetV2-S를 선택했는지 보기 — 모델 후보 비교</summary>
@@ -135,13 +138,17 @@ Logistic Regression + Calibration
 
 ### 1. 실사 이미지 검증에서 확인한 도메인 갭
 
-AI Hub 합성 이미지에서는 99.60%의 정확도를 보였지만 외부 실사 이미지 25장에서는 52%까지 하락했습니다. 오분류 사례를 확인한 결과 조명·배경·피부톤 등 학습 데이터와 실제 촬영 환경의 차이가 주요 원인으로 판단됐습니다.
+AI Hub 합성 이미지에서는 100%에 가까운 정확도를 보였지만 외부 실사 이미지 25장에서는 52%까지 하락했습니다. 오분류 사례를 확인한 결과 조명·배경·피부톤 등 학습 데이터와 실제 촬영 환경의 차이가 주요 원인으로 판단됐습니다.
 
 DermNet 아토피 폴더의 라벨 노이즈 가능성을 확인해 파일명 기준으로 정제한 별도 데이터셋을 구성하고 재학습했지만, 외부 실사 스팟체크 성능이 52% → 44%로 하락했습니다. 해당 실험 버전은 채택하지 않았으며, 데이터 라벨 품질과 실제 촬영 환경 일반화 문제를 추가 검증 과제로 남겼습니다.
 
 데이터 구성 단계에서도 AI Hub의 정면·측면 이미지를 각각 비교해, 측면 단독 구성이 더 높은 정확도를 보여 최종 파이프라인에 반영했습니다.
 
-### 2. 두 모델의 확률 합산 설계 폐기
+### 2. DermNet cross-split duplicate 제거
+
+DermNet은 원본 자체의 train/test 폴더에 동일·근접 이미지가 섞여 있었고(`01_image_preprocess.py`가 이를 합친 뒤 다시 무작위로 나누는 구조), 감사 결과 exact 중복 103그룹(213장)과 near-duplicate(perceptual hash) 120쌍이 train/val/test를 넘나드는 것으로 확인됐습니다. `image_model/01b_dedup_split.py`로 중복 이미지를 union-find로 묶어 그룹 단위로만 재분할하도록 고쳤고(이미지 삭제 없이 배정만 조정), 같은 아키텍처·하이퍼파라미터로 재학습해 `models/mixed_v3`를 갱신했습니다. 외부 실사 25장(모델 변경과 무관한 완전 독립 데이터) 정확도는 52.0%로 재학습 전후 동일해 회귀는 없었습니다.
+
+### 3. 두 모델의 확률 합산 설계 폐기
 
 초기에는 이미지 모델과 설문 모델의 확률을 합산해 하나의 위험도 점수를 제공하려 했습니다. 그러나 이미지 모델은 사진의 시각적 피부 상태, 설문 모델은 아토피 진단군에서 관찰된 건강 특성을 학습한다는 점에서 두 확률의 의미가 다르다고 판단했습니다.
 
@@ -163,7 +170,7 @@ Python 3.11 · PyTorch · timm · scikit-learn · Optuna · pandas · Streamlit 
 | 피부 이미지 | [DermNet](https://www.kaggle.com/datasets/shubhamgoel27/dermnet) | 아토피·건선·여드름·주사 / 2,167장 |
 | 건강설문 | [KNHANES](https://knhanes.kdca.go.kr) 2022–2024 | 아토피 의사진단 이력 기반 / 7,409명 |
 
-AI Hub 데이터는 합성 이미지이며, DermNet은 원본 train/test를 통합한 뒤 이미지 단위로 재분할했습니다.
+AI Hub 데이터는 합성 이미지이며, DermNet은 원본 train/test를 통합한 뒤 exact/near-duplicate 이미지가 같은 split에만 배정되도록 그룹 단위로 재분할했습니다(`01b_dedup_split.py`).
 
 <details>
 <summary><b>🗂️ 레포지토리 구조</b></summary>
@@ -191,11 +198,14 @@ pip install -r requirements.txt
 **이미지 모델**
 ```bash
 python image_model/01_image_preprocess.py
+python image_model/01b_dedup_split.py     # DermNet cross-split duplicate 제거 재분할
 python image_model/02_image_model_compare.py
 python image_model/03_image_tune_optuna.py
 python image_model/04_image_train.py
 python image_model/05_image_evaluate.py
 ```
+
+02/03(모델 후보 비교·Optuna 튜닝)은 최초 1회 수행한 결과를 하이퍼파라미터로 고정해 04에 반영해뒀으므로, 재현 목적이 아니라면 04부터 실행해도 됩니다.
 
 **설문 모델**
 ```bash
@@ -227,6 +237,9 @@ streamlit run app/main.py
 - SHA-256 비밀번호 저장 → bcrypt 전환
 - 사용자 데이터·업로드 이미지의 Git 추적 제거
 - 실제 사용 패키지 기준 requirements 재정리
+- 설문 모델 결측 대치·threshold를 train fold/calibration에만 fit하도록 재점검 (feature set 자체는 기존 EDA 결과를 고정 설계값으로 유지)
+- 아토피 설문 페이지에 이미지 top1 라벨 가드 추가, 보고서 화면에 스크리닝 결과 섹션 신설
+- DermNet cross-split duplicate(exact+near) 제거 재분할 후 동일 설정으로 이미지 모델 재학습
 
 </details>
 
@@ -235,7 +248,7 @@ streamlit run app/main.py
 ## ⚠️ 한계
 
 - 이미지 학습 데이터와 실제 촬영 환경 사이에 도메인 갭이 존재합니다.
-- DermNet은 환자 ID가 없어 환자 단위 train/test 분리를 수행하지 못했습니다.
+- DermNet은 환자 ID가 없어 환자 단위 train/test 분리는 여전히 수행하지 못합니다(이미지 단위 exact/near-duplicate가 split을 넘나드는 문제만 해결했습니다 — 같은 환자의 서로 다른 사진까지 분리하지는 못함).
 - 설문 모델은 미래 발병 예측이 아닌 현재 아토피 가능성을 선별하는 모델입니다.
 - 설문 모델의 PR-AUC가 약 0.33으로 불균형 데이터에 따른 성능 한계가 있습니다.
 - Grad-CAM 등 이미지 모델의 설명 가능성 검증이 추가로 필요합니다.

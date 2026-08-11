@@ -74,11 +74,6 @@ def save_record(user_id, image_path, predictions, top_label, top_prob,
 
 def update_record_survey(record_id, survey_score, risk_level, survey_features=None):
     conn = get_conn()
-    try:
-        conn.execute("ALTER TABLE records ADD COLUMN survey_features TEXT DEFAULT NULL")
-        conn.commit()
-    except Exception:
-        pass
     conn.execute(
         "UPDATE records SET survey_score=?, risk_level=?, survey_features=? WHERE id=?",
         (survey_score, risk_level,

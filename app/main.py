@@ -49,7 +49,9 @@ if st.session_state.user is None:
         if submitted:
             user = get_user(username)
             if user and verify_pw(password, user["password"]):
-                st.session_state.user = user
+                # 세션에는 비밀번호 해시를 포함한 DB row 전체가 아니라
+                # 실제로 필요한 값만 저장한다.
+                st.session_state.user = {"id": user["id"], "username": user["username"]}
                 st.success(f"{username}님, 환영합니다!")
                 st.rerun()
             else:
@@ -62,11 +64,13 @@ if st.session_state.user is None:
             new_pw2  = st.text_input("비밀번호 확인", type="password")
             submitted = st.form_submit_button("회원가입", width='stretch')
         if submitted:
-            if new_pw != new_pw2:
+            if not new_user or not new_user.strip():
+                st.error("아이디를 입력해주세요.")
+            elif new_pw != new_pw2:
                 st.error("비밀번호가 일치하지 않습니다.")
             elif len(new_pw) < 8:
                 st.error("비밀번호는 8자 이상이어야 합니다.")
-            elif create_user(new_user, hash_pw(new_pw)):
+            elif create_user(new_user.strip(), hash_pw(new_pw)):
                 st.success("가입 완료! 로그인해주세요.")
             else:
                 st.error("이미 사용 중인 아이디입니다.")

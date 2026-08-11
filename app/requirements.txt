@@ -1,10 +1,12 @@
+# torch/torchvision/timm/scikit-learn 버전은 실제 학습된 artifact(.pth, .pkl)를
+# 다시 로드해 inference까지 성공한 버전으로 핀 고정했습니다.
 streamlit>=1.32.0
-torch>=2.0.0
-torchvision>=0.15.0
-timm>=0.9.0
+torch==2.5.1
+torchvision==0.20.1
+timm==1.0.26
 Pillow>=9.0.0
 pandas>=1.5.0
 numpy>=1.23.0
 matplotlib>=3.6.0
-scikit-learn>=1.0.0
+scikit-learn==1.7.2
 bcrypt>=4.0.0

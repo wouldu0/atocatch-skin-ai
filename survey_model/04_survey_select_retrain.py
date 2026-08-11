@@ -27,6 +27,7 @@ Calibration:
   - pred_best_test.csv  : y_true, y_score_raw, y_score_calibrated
 """
 
+import ast
 import json
 import copy
 import pickle
@@ -185,7 +186,7 @@ def parse_best_params(raw):
     """candidates_all.csv 의 best_params 셀이 dict 또는 str 둘 다 가능"""
     if isinstance(raw, dict):
         return raw
-    return eval(raw)
+    return ast.literal_eval(raw)
 
 
 def build_sklearn_pipeline(model_name, imbalance, params, scale_pos_weight):
@@ -393,10 +394,20 @@ def main():
         return
     df_all = pd.read_csv(cand_path)
     df_all['best_params'] = df_all['best_params'].apply(parse_best_params)
-    print(f"[로드] candidates_all.csv (n={len(df_all)})")
+    print(f"[로드] candidates_all.csv (n={len(df_all)}, 전체 모델 비교)")
 
     # 2) Best 선정
-    best = select_best(df_all, OUT_DIR / "selection_log.txt")
+    # 배포(production) artifact는 LogisticRegression으로 명시적으로 고정한다.
+    #   이유: app/utils/atopy_model.py가 sklearn_pipeline.coef_ 기반 feature
+    #   contribution(설명가능성) UI를 제공하는데, RandomForest/LightGBM/MLP는
+    #   coef_가 없거나(트리 모델) sklearn_pipeline 자체가 없어(MLP, artifact_pipe=None)
+    #   같은 방식으로 해석할 수 없다. 모델 간 성능 비교 자체는 여러 모델을 그대로
+    #   유지하며(candidates_all.csv / tuning_summary.csv), production 선정만
+    #   LogReg 후보로 제한한다.
+    df_logreg = df_all[df_all['Model'] == 'LogReg'].reset_index(drop=True)
+    if len(df_logreg) == 0:
+        raise RuntimeError("candidates_all.csv에 LogReg 후보가 없습니다. 03을 다시 확인하세요.")
+    best = select_best(df_logreg, OUT_DIR / "selection_log.txt")
     print(f"\n[선정] {best['Label']}")
     print(f"  CV AUC = {best['CV_ROC_AUC_mean']:.4f} ± {best['CV_ROC_AUC_std']:.4f}")
     print(f"  CV PR  = {best['CV_PR_AUC']:.4f}")

@@ -1,17 +1,11 @@
 # ============================================================
-# 혼합 데이터 학습: AI Hub(합성) + DermNet(실제)
-# EfficientNetV2-S | Optuna 튜닝 하이퍼파라미터 적용
+# [LEGACY] 혼합 데이터 학습: AI Hub(합성) + DermNet(실제)
+# EfficientNetV2-S | Optuna 튜닝 적용 버전
 #
-# [split 계보] 이 스크립트는 01_image_preprocess.py의 출력(skin_disease_mixed.csv)을
-# 그대로 쓰지 않고, 01b_dedup_split.py가 DermNet cross-split duplicate(exact MD5 +
-# near-dup phash<=4)를 그룹 단위로 재분할한 skin_disease_mixed_dedup.csv를 사용한다.
-# 기존 skin_disease_mixed.csv 기반 학습은 04_image_train_legacy.py로 보존했다
-# (models/mixed_v3_legacy_preleakfix, 포트폴리오 정리 감사에서 cross-split
-# duplicate가 발견되기 전 버전 — 비교 참고용으로만 유지, 프로덕션 아님).
-#
-# architecture / hyperparameter(Optuna 튜닝값) / augmentation / seed / epoch은
-# legacy 버전과 완전히 동일하게 고정했다 — 모델 탐색을 다시 하지 않고
-# split만 duplicate-safe하게 바꿔 재학습한 것이다.
+# 포트폴리오 정리 감사에서 DermNet 원본 split에 cross-split duplicate(exact
+# 103그룹/213장 + near-dup 120쌍)가 발견되어, duplicate-safe 재분할로 재학습한
+# 04_image_train.py(models/mixed_v3)가 현재 production이다. 이 스크립트는
+# 비교 참고용으로만 보존한다 — 새로 실행하거나 이 결과를 배포에 쓰지 말 것.
 # ============================================================
 import os
 from pathlib import Path
@@ -33,9 +27,9 @@ plt.rcParams['axes.unicode_minus'] = False
 
 # ── 설정 (본인 환경에 맞게 수정) ──────────────────────────────
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-CSV_PATH   = PROJECT_ROOT / "data" / "skin_disease_mixed_dedup.csv"
+CSV_PATH   = PROJECT_ROOT / "data" / "skin_disease_mixed_legacy_preleakfix.csv"
 IMAGE_COL  = "image_path_300"
-SAVE_DIR   = PROJECT_ROOT / "models" / "mixed_v3"
+SAVE_DIR   = PROJECT_ROOT / "models" / "mixed_v3_legacy_preleakfix"
 os.makedirs(SAVE_DIR, exist_ok=True)
 
 IMG_SIZE        = 300

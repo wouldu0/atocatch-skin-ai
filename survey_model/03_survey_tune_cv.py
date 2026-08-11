@@ -25,6 +25,7 @@
   - test_split_indices.npz  : 04에서 동일 split 재현용
 """
 
+import ast
 import json
 import copy
 import time
@@ -410,7 +411,7 @@ def tune_mlp(X_trv, y_trv, skf, spw):
             'Imbalance': imbalance,
             'Label': f"MLP_{imbalance}",
             'best_params': {
-                'hidden': eval(top['hidden']),
+                'hidden': ast.literal_eval(top['hidden']),
                 'dropout': float(top['dropout']),
                 'lr': float(top['lr']),
                 'loss': top['loss'],

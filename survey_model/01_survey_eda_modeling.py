@@ -900,6 +900,29 @@ if len(drop_na_cols) > 0:
     print("\n[행 삭제 후 데이터 크기]")
     print(data.shape)
 
+# =========================
+# 8-0. [데이터 누수 방지] 최종 7개 변수의 결측 미대체 스냅샷 저장
+# =========================
+# 아래 median/mode 대체는 전체 데이터(추후 train+test 전부) 기준으로 계산되므로,
+# 이 값을 그대로 02_prepare_features.py가 사용하면 test 정보가 imputation에
+# 간접적으로 섞여 들어간다 (data leakage).
+# 최종 모델의 7개 변수(DJ8_dg, DJ4_dg, marri_1, age_group, town_t, BD1_11,
+# sm_presnt)는 여기서는 결측을 NaN으로 "보존"한 채 별도 파일로 저장하고,
+# 실제 대치는 03/04에서 train fold에만 fit하는 SimpleImputer(most_frequent)가
+# 담당하도록 한다. (7개 변수 자체의 선정은 아래 9~24 섹션의 전체 데이터
+# EDA/통계검정 결과이며, 이는 프로젝트 설계상 고정된 historical 변수셋으로
+# 취급한다 — 상세 설명은 02_prepare_features.py 상단 docstring 참고)
+_leak_free_cols = [c for c in [
+    'DJ8_dg', 'DJ4_dg', 'marri_1', 'age_group', 'town_t', 'BD1_11',
+    'sm_presnt', target,
+] if c in data.columns]
+data[_leak_free_cols].to_csv(
+    DATA_DIR / "pre_impute_for_features.csv", index=False, encoding="utf-8-sig"
+)
+print("\n[누수 방지용 결측 미대체 스냅샷 저장 완료 (02가 사용)]")
+print(DATA_DIR / "pre_impute_for_features.csv")
+print(data[_leak_free_cols].isnull().sum())
+
 # 2) 연속형은 중앙값 대체
 for col in median_impute_cols:
     data[col] = pd.to_numeric(data[col], errors='coerce')

@@ -50,7 +50,7 @@ class SkinDataset(Dataset):
 
     def __getitem__(self, idx):
         row = self.df.iloc[idx]
-        image = Image.open(row[IMAGE_COL]).convert("RGB")
+        image = Image.open(PROJECT_ROOT / row[IMAGE_COL]).convert("RGB")
         return self.transform(image), int(row["label"])
 
 
@@ -153,6 +153,7 @@ def objective(trial):
 # ── 튜닝 실행 ──────────────────────────────────────────────
 study = optuna.create_study(
     direction="maximize",
+    sampler=optuna.samplers.TPESampler(seed=SEED),
     pruner=MedianPruner(n_startup_trials=5, n_warmup_steps=3),
     study_name="efficientnetv2s_mixed",
 )

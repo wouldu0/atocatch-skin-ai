@@ -43,6 +43,12 @@ os.makedirs(DERMNET_OUT_DIR, exist_ok=True)
 IMG_EXTS = {".jpg", ".jpeg", ".png", ".bmp"}
 
 
+def to_repo_relative(path):
+    """실행 PC의 절대경로 대신 저장소 루트 기준 상대경로를 CSV에 저장한다.
+    (다른 환경에서 CSV를 그대로 열어도 경로가 깨지지 않도록)"""
+    return os.path.relpath(str(path), PROJECT_ROOT).replace(os.sep, "/")
+
+
 # ════════════════════════════════════════════════════════════
 # Step 1. AI Hub 측면 이미지 300px 리사이즈
 # ════════════════════════════════════════════════════════════
@@ -89,7 +95,7 @@ with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
             pbar.update(1)
 
 print(f"완료: 성공 {len(aihub_df) - errors}장 / 실패 {errors}장")
-aihub_df["image_path_300"] = new_paths
+aihub_df["image_path_300"] = [to_repo_relative(p) for p in new_paths]
 aihub_df["source"] = "aihub"
 
 # train에서 클래스별 100장씩 test로 분리 (원본 CSV에 test 없음)
@@ -184,7 +190,7 @@ for folder, prefixes, cls_name, label in DERMNET_MAP:
                        else "validation" if i in val_idx
                        else "train")
         dermnet_records.append({
-            "image_path_300": dst_path,
+            "image_path_300": to_repo_relative(dst_path),
             "label":          label,
             "diagnosis_name": cls_name,
             "source":         "dermnet",

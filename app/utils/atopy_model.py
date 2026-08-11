@@ -19,14 +19,10 @@ from config import SURVEY_MODEL_PATH
 
 MODEL_PKL = SURVEY_MODEL_PATH
 
-# 운영 threshold (survey_model/05_threshold_analysis.py 산출)
-# calibration holdout set에서 Youden's J(sensitivity+specificity 균형) 기준으로 선정,
-# 최종 test set에는 이 값을 고정해 1회만 적용함 (test 재사용 없음).
-THRESHOLD = 0.11
-
-# 참고: 같은 calib set에서 F1-optimal 기준으로는 0.17이 나왔으나,
-# 앱 운영 기준으로는 채택하지 않고 비교값으로만 기록해 둠.
-F1_OPTIMAL_THRESHOLD_REFERENCE = 0.17
+# Fallback 운영 threshold — best_model.pkl에 threshold가 없는 구버전 artifact용.
+# survey_model/05_threshold_analysis.py가 산출한 calibration holdout 기준 Youden's J
+# 값(과거 실행 결과)이며, 앱은 항상 pkl에 저장된 threshold를 우선 사용한다.
+_FALLBACK_THRESHOLD = 0.11
 
 # 피처 한글 라벨
 FEATURE_LABELS = {
@@ -79,14 +75,31 @@ def predict_atopy_prob(features: dict) -> float:
     return prob
 
 
+def get_threshold() -> float:
+    """운영 threshold. best_model.pkl에 저장된 값을 우선 사용하고,
+    (구버전 artifact처럼) 없으면 코드의 fallback 값을 사용한다."""
+    m = _load_model()
+    return float(m.get("threshold", _FALLBACK_THRESHOLD))
+
+
+def get_threshold_source() -> str:
+    m = _load_model()
+    return m.get(
+        "threshold_source",
+        f"[fallback] artifact에 threshold 메타데이터가 없어 코드 기본값"
+        f"({_FALLBACK_THRESHOLD})을 사용 중입니다. 05_threshold_analysis.py 재실행을 권장합니다.",
+    )
+
+
 def get_risk_level(prob: float) -> tuple[str, str]:
-    """prob과 운영 threshold(THRESHOLD)를 비교해 이진 스크리닝 결과를 반환.
+    """prob과 운영 threshold를 비교해 이진 스크리닝 결과를 반환.
 
     3단계(낮음/보통/높음) 대신 이진 판정만 쓰는 이유: 분석으로 얻은 운영점은
-    THRESHOLD 하나뿐이라, 등급을 더 나누면 그 경계에 대한 별도 통계적 근거가
+    threshold 하나뿐이라, 등급을 더 나누면 그 경계에 대한 별도 통계적 근거가
     없어집니다.
     """
-    if prob >= THRESHOLD:
+    threshold = get_threshold()
+    if prob >= threshold:
         return (
             "스크리닝 기준치 이상",
             "입력한 정보에서 아토피 진단군과 유사한 패턴이 확인되었습니다. 피부 증상이 있다면 전문의 상담을 고려해 주세요.",
@@ -99,6 +112,8 @@ def get_risk_level(prob: float) -> tuple[str, str]:
 
 
 def get_risk_factors(features: dict) -> list[dict]:
+    # production artifact는 04_survey_select_retrain.py에서 LogisticRegression으로
+    # 고정 선정되므로 coef_ 기반 기여도 계산이 유효하다 (RF/LightGBM/MLP는 미선정).
     m = _load_model()
     clf = m["sklearn_pipeline"].named_steps["clf"]
     coef = clf.coef_[0]

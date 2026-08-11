@@ -18,6 +18,7 @@
 """
 
 import json
+import pickle
 import warnings
 import numpy as np
 import pandas as pd
@@ -227,6 +228,23 @@ def main():
     }
     with open(OUT_DIR / "threshold_summary.json", 'w', encoding='utf-8') as f:
         json.dump(summary_json, f, indent=2, ensure_ascii=False, default=str)
+
+    # 6) 채택 threshold를 best_model.pkl에 함께 저장
+    #    (모델 artifact와 threshold가 서로 다른 버전으로 drift하는 것을 방지:
+    #     앱은 이 pkl 하나만 읽으면 모델과 운영 threshold를 동시에 얻는다.)
+    model_pkl_path = MODEL_DIR / "best_model.pkl"
+    with open(model_pkl_path, 'rb') as f:
+        artifacts = pickle.load(f)
+    artifacts['threshold'] = float(youden_thr)
+    artifacts['threshold_operating_point'] = 'Youden_J'
+    artifacts['threshold_score_col'] = SCORE_COL
+    artifacts['threshold_source'] = (
+        'survey_model/05_threshold_analysis.py: calibration holdout에서 '
+        "Youden's J(sensitivity+specificity-1 최대화)로 선정, test set에는 1회만 적용"
+    )
+    with open(model_pkl_path, 'wb') as f:
+        pickle.dump(artifacts, f)
+    print(f"\n[threshold 저장] {model_pkl_path} 에 threshold={youden_thr:.3f} 추가 저장")
 
     print(f"\n[완료] → {OUT_DIR}")
     for f in sorted(OUT_DIR.glob("*")):

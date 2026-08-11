@@ -2,7 +2,7 @@ import streamlit as st
 import sys, os
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-from utils.atopy_model import get_risk_factors
+from utils.atopy_model import get_risk_factors, get_threshold
 from utils.style import apply_global_style
 
 st.set_page_config(page_title="분석 보고서", page_icon="📊", layout="centered")
@@ -84,11 +84,35 @@ elif top_label == "주사":
 else:
     st.warning(f"**{top_label}** 가능성이 있습니다. 정확한 진단을 위해 피부과 방문을 권장합니다.")
 
-# ── 3. 예측에 영향을 준 주요 특성 ─────────────────────────────────
+# ── 3. 아토피 가능성 스크리닝 결과 (설문 모델) ─────────────────────
 st.divider()
-st.subheader("3. 예측에 영향을 준 주요 특성")
-st.caption("모델이 인과관계를 판단한 것이 아니라, 입력값이 예측 점수에 기여한 정도를 보여줍니다.")
+st.subheader("3. 아토피 가능성 스크리닝 결과")
 survey_features = st.session_state.get("survey_features")
+if survey_features and atopy_prob is not None:
+    threshold = get_threshold()
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("스크리닝 확률 (calibrated)", f"{atopy_prob*100:.1f}%")
+    with col2:
+        st.metric("운영 기준치", f"{threshold*100:.1f}%")
+    if risk_level == "스크리닝 기준치 이상":
+        st.warning(f"**{risk_level}** — {risk_desc}")
+    else:
+        st.success(f"**{risk_level}** — {risk_desc}")
+    st.caption(
+        "⚠️ 이 확률은 미래 아토피 발병 확률이 아닙니다. KNHANES 설문 응답 패턴이 "
+        "과거 아토피 의사진단 이력이 있는 집단과 얼마나 유사한지를 보여주는 "
+        "스크리닝 지표이며, 위 1번의 이미지 모델 확률과는 서로 다른 정보를 측정하므로 "
+        "합산하지 않고 독립적으로 해석합니다."
+    )
+else:
+    st.info("아토피 설문을 진행하지 않았습니다. 아토피가 1위로 예측된 경우 설문을 통해 스크리닝 결과를 확인할 수 있습니다.")
+    st.page_link("pages/2_아토피_설문.py", label="📋 아토피 설문 바로가기")
+
+# ── 4. 예측에 영향을 준 주요 특성 ─────────────────────────────────
+st.divider()
+st.subheader("4. 예측에 영향을 준 주요 특성")
+st.caption("모델이 인과관계를 판단한 것이 아니라, 입력값이 예측 점수에 기여한 정도를 보여줍니다.")
 if survey_features:
     factors = get_risk_factors(survey_features)
     st.markdown("")
@@ -112,12 +136,11 @@ if survey_features:
     else:
         st.caption("✅ 설문 응답에서 예측 점수에 영향을 준 주요 특성이 발견되지 않았습니다.")
 else:
-    st.info("아토피 설문을 진행하지 않았습니다. 아토피가 1위로 예측된 경우 설문을 통해 예측에 영향을 준 특성을 확인할 수 있습니다.")
-    st.page_link("pages/2_아토피_설문.py", label="📋 아토피 설문 바로가기")
+    st.info("아토피 설문을 진행하지 않았습니다.")
 
-# ── 4. 주변 피부과 찾기 ──────────────────────────────────────────
+# ── 5. 주변 피부과 찾기 ──────────────────────────────────────────
 st.divider()
-st.subheader("4. 주변 피부과 찾기")
+st.subheader("5. 주변 피부과 찾기")
 st.caption("아래 버튼을 누르면 현재 위치 기준으로 가까운 피부과를 검색할 수 있습니다.")
 
 col1, col2 = st.columns(2)
@@ -139,9 +162,9 @@ st.caption("※ 버튼을 누르면 새 탭에서 현재 위치 기준 피부과
 st.divider()
 st.caption("⚠️ 이 보고서는 AI 기반 참고 자료이며 의료 진단을 대체하지 않습니다.")
 
-# ── 5. 보고서 저장 ────────────────────────────────────────────────
+# ── 6. 보고서 저장 ────────────────────────────────────────────────
 st.divider()
-st.subheader("5. 보고서 저장")
+st.subheader("6. 보고서 저장")
 
 import datetime
 
@@ -187,6 +210,24 @@ for r in predictions:
     </tr>"""
 prob_bars += "</table>"
 
+# 아토피 가능성 스크리닝 결과 섹션 (설문 모델)
+screening_section = ""
+if survey_features and atopy_prob is not None:
+    _threshold = get_threshold()
+    screening_section = f"""
+    <h2>2. 아토피 가능성 스크리닝 결과</h2>
+    <div class='highlight'>
+      <p><strong>스크리닝 확률(calibrated):</strong> {atopy_prob*100:.1f}% &nbsp;|&nbsp;
+         <strong>운영 기준치:</strong> {_threshold*100:.1f}% &nbsp;|&nbsp;
+         <strong>판정:</strong> <span style='color:{risk_color}; font-weight:600;'>{risk_level}</span></p>
+      <p>{risk_desc}</p>
+    </div>
+    <p style='font-size:12px; color:#888;'>
+      ⚠️ 이 확률은 미래 아토피 발병 확률이 아닙니다. KNHANES 설문 응답 패턴이 과거 아토피
+      의사진단 이력이 있는 집단과 얼마나 유사한지를 보여주는 스크리닝 지표이며,
+      위 이미지 모델 확률과는 서로 다른 정보를 측정하므로 합산하지 않고 독립적으로 해석합니다.
+    </p>"""
+
 # 예측에 영향을 준 주요 특성 섹션
 factors_section = ""
 if survey_features:
@@ -201,11 +242,11 @@ if survey_features:
                 <div style='font-size:13px; color:#555;'>💡 {f['recommendation']}</div>
             </div>"""
         factors_section = f"""
-        <h2>2. 예측에 영향을 준 주요 특성 및 참고 정보</h2>
+        <h2>3. 예측에 영향을 준 주요 특성 및 참고 정보</h2>
         {_factors_html}"""
     else:
         factors_section = """
-        <h2>2. 예측에 영향을 준 주요 특성</h2>
+        <h2>3. 예측에 영향을 준 주요 특성</h2>
         <p style='color:#27ae60;'>✅ 설문 응답에서 예측 점수에 영향을 준 주요 특성이 발견되지 않았습니다.</p>"""
 
 html_report = f"""<!DOCTYPE html>
@@ -242,6 +283,8 @@ html_report = f"""<!DOCTYPE html>
 </div>
 <p><strong>질환별 예측 확률</strong></p>
 {prob_bars}
+
+{screening_section}
 
 {factors_section}
 

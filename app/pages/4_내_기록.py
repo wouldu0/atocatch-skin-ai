@@ -41,7 +41,8 @@ atopy_records = [
 atopy_df = pd.DataFrame(atopy_records)
 
 if len(atopy_df) > 1:
-    st.subheader("📈 아토피 예측 확률 추이")
+    st.subheader("📈 이미지 모델의 아토피 분류 확률 추이")
+    st.caption("설문 스크리닝 확률이 아니라, 업로드한 피부 사진에 대해 이미지 분류 모델이 예측한 '아토피' 클래스 확률입니다.")
     fig, ax = plt.subplots(figsize=(10, 3))
     ax.plot(atopy_df["날짜"], atopy_df["아토피 확률"],
             marker="o", color="#e74c3c", linewidth=2)
