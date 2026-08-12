@@ -60,7 +60,7 @@ AtoCatch는 피부 이미지를 분석하는 이미지 분류 모델과 KNHANES 
 | AI Hub hold-out (합성, 499장) | 100.00% | 1.0000 |
 | DermNet hold-out (실사, 324장, duplicate-safe 재분할) | 91.98% | 0.9240 |
 | 전체 hold-out 합산 (823장) | 96.84% | 0.9728 |
-| 외부 실사 이미지 스팟체크 (25장) | 52.0% | - |
+| 외부 실사 이미지 스팟체크 (25장) | 52.0% | 0.4415 |
 
 > 포트폴리오 정리 감사에서 DermNet 원본 split에 train/test를 넘나드는 exact/near-duplicate 이미지가 있었음을 발견해(아래 "모델 검증과 의사결정" 참고), 중복 이미지를 그룹 단위로 같은 split에만 묶어 재분할한 뒤 **동일 아키텍처·하이퍼파라미터로 재학습**한 결과입니다. 이전 버전(94.43%/0.9486, 별도 test 구성)은 `image_model/04_image_train_legacy.py` / `models/mixed_v3_legacy_preleakfix/`에 비교 참고용으로 남겨뒀습니다.
 
@@ -271,6 +271,8 @@ streamlit run app/main.py
 - 설문 모델은 미래 발병 예측이 아닌 현재 아토피 가능성을 선별하는 모델입니다.
 - 설문 모델의 PR-AUC가 약 0.33으로 불균형 데이터에 따른 성능 한계가 있습니다.
 - Grad-CAM 등 이미지 모델의 설명 가능성 검증이 추가로 필요합니다.
+
+AtoCatch에서 확인된 실제 촬영 환경의 domain gap과 서비스 타깃의 불명확성을 바탕으로, 대상을 영유아로 좁히고 데이터·기능을 구체화한 후속 프로젝트 [AtoCatch-Pediatric-Atopy-AI](https://github.com/wouldu0/atocatch-pediatric-atopy-ai)를 진행했습니다. 영유아를 대상으로 아토피 위험 신호 확인, 피부 상태·중증도 분석, 홈케어 기능을 결합한 AI 서비스입니다.
 
 ---
 
